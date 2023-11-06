@@ -2,19 +2,18 @@ package repl
 
 import (
 	"bufio"
-	"fmt"
-	"io"
+	"donkey/constants"
 	"donkey/lexer"
 	"donkey/token"
+	"fmt"
+	"io"
 )
-
-const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 
 	for {
-		fmt.Fprintf(out, PROMPT)
+		fmt.Fprintf(out, constants.ReplPrompt)
 		scanned := scanner.Scan()
 		if !scanned {
 			return

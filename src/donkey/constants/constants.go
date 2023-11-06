@@ -1,3 +1,5 @@
 package constants
 
-const DonkeyLangName = "donkey"
+const LangName = "donkey"
+
+const ReplPrompt = "\u001b[33m💡 "
