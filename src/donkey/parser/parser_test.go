@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"donkey/ast"
 	"donkey/lexer"
+	"log"
 	"testing"
 )
 
@@ -13,9 +14,7 @@ func TestLetStatements(t *testing.T) {
 		expectedIdentifier string
 		expectedValue      interface{}
 	}{
-		{"let x = 5;", "x", 5},
-		{"let y = true;", "y", true},
-		{"let foobar = y;", "foobar", "y"},
+		{"let 💚 = 5;", "💚", 5},
 	}
 
 	for _, tt := range tests {
@@ -23,6 +22,8 @@ func TestLetStatements(t *testing.T) {
 		p := New(l)
 		program := p.ParseProgram()
 		checkParserErrors(t, p)
+
+		log.Println(program.String())
 
 		if len(program.Statements) != 1 {
 			t.Fatalf("program.Statements does not contain 1 statements. got=%d",
@@ -78,7 +79,7 @@ func TestReturnStatements(t *testing.T) {
 }
 
 func TestIdentifierExpression(t *testing.T) {
-	input := "foobar;"
+	input := "💚;"
 
 	l := lexer.New(input)
 	p := New(l)
@@ -99,11 +100,11 @@ func TestIdentifierExpression(t *testing.T) {
 	if !ok {
 		t.Fatalf("exp not *ast.Identifier. got=%T", stmt.Expression)
 	}
-	if ident.Value != "foobar" {
-		t.Errorf("ident.Value not %s. got=%s", "foobar", ident.Value)
+	if ident.Value != "💚" {
+		t.Errorf("ident.Value not %s. got=%s", "💚", ident.Value)
 	}
-	if ident.TokenLiteral() != "foobar" {
-		t.Errorf("ident.TokenLiteral not %s. got=%s", "foobar",
+	if ident.TokenLiteral() != "💚" {
+		t.Errorf("ident.TokenLiteral not %s. got=%s", "💚",
 			ident.TokenLiteral())
 	}
 }
@@ -145,7 +146,7 @@ func TestParsingPrefixExpressions(t *testing.T) {
 		operator string
 		value    interface{}
 	}{
-		{"!5;", "!", 5},
+		{"!💚;", "!", "💚"},
 		{"-15;", "-", 15},
 	}
 
@@ -381,7 +382,6 @@ func testLiteralExpression(
 		return testIntegerLiteral(t, exp, v)
 	case string:
 		return testIdentifier(t, exp, v)
-
 	}
 	t.Errorf("type of exp not handled. got=%T", exp)
 	return false

@@ -7,10 +7,10 @@ import (
 )
 
 func TestNextToken(t *testing.T) {
-	input := `let five = 5;
-let ten = 10;
+	input := `let five💚 = 5;
+let tϣen = 10;
 
-let add = fn(x, y) {
+let add123 = fn(x, y) {
 x + y;
 };
 
@@ -34,17 +34,17 @@ x <= 0 >= y;
 		expectedLiteral string
 	}{
 		{token.LET, "let"},
-		{token.IDENT, "five"},
+		{token.IDENT, "five💚"},
 		{token.ASSIGN, "="},
 		{token.INT, "5"},
 		{token.SEMICOLON, ";"},
 		{token.LET, "let"},
-		{token.IDENT, "ten"},
+		{token.IDENT, "tϣen"},
 		{token.ASSIGN, "="},
 		{token.INT, "10"},
 		{token.SEMICOLON, ";"},
 		{token.LET, "let"},
-		{token.IDENT, "add"},
+		{token.IDENT, "add123"},
 		{token.ASSIGN, "="},
 		{token.FUNCTION, "fn"},
 		{token.LPAREN, "("},

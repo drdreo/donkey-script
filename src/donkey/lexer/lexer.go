@@ -2,13 +2,15 @@ package lexer
 
 import (
 	"donkey/token"
+	"unicode"
+	"unicode/utf8"
 )
 
 type Lexer struct {
 	input   string
 	pos     int  // current position in input (points to current char)
 	readPos int  // current reading position in input (after current char)
-	char    byte // current character under examination
+	char    rune // current character under examination
 }
 
 func New(input string) *Lexer {
@@ -17,26 +19,30 @@ func New(input string) *Lexer {
 	return l
 }
 
-// TODO: support emojis, change char type and support different char width stepping
 func (l *Lexer) readChar() {
+	stepSize := 1
+
 	if l.readPos >= len(l.input) {
 		l.char = 0
 	} else {
-		l.char = l.input[l.readPos]
+		char, size := utf8.DecodeRuneInString(l.input[l.readPos:])
+		l.char = char
+		stepSize = size
 	}
 	l.pos = l.readPos
-	l.readPos += 1
+	l.readPos += stepSize
 }
 
-func (l *Lexer) peekChar() byte {
+func (l *Lexer) peekChar() rune {
 	if l.readPos >= len(l.input) {
 		return 0
 	} else {
-		return l.input[l.readPos]
+		r, _ := utf8.DecodeRuneInString(l.input[l.readPos:])
+		return r
 	}
 }
 
-func newToken(tokenType token.TokenType, char byte) token.Token {
+func newToken(tokenType token.TokenType, char rune) token.Token {
 	return token.Token{Type: tokenType, Literal: string(char)}
 }
 
@@ -49,7 +55,7 @@ func (l *Lexer) newTwoCharToken(tokenType token.TokenType) token.Token {
 
 func (l *Lexer) readIdentifier() string {
 	pos := l.pos
-	for isLetter(l.char) {
+	for isValidIdentifierChar(l.char) {
 		l.readChar()
 	}
 	return l.input[pos:l.pos]
@@ -57,14 +63,14 @@ func (l *Lexer) readIdentifier() string {
 
 func (l *Lexer) readNumber() string {
 	pos := l.pos
-	for isDigit(l.char) {
+	for unicode.IsDigit(l.char) {
 		l.readChar()
 	}
 	return l.input[pos:l.pos]
 }
 
 func (l *Lexer) skipWhitespace() {
-	for l.char == ' ' || l.char == '\t' || l.char == '\n' || l.char == '\r' {
+	for unicode.IsSpace(l.char) {
 		l.readChar()
 	}
 }
@@ -122,11 +128,11 @@ func (l *Lexer) NextToken() token.Token {
 		tok.Literal = ""
 		tok.Type = token.EOF
 	default:
-		if isLetter(l.char) {
+		if isValidIdentifierChar(l.char) {
 			tok.Literal = l.readIdentifier()
 			tok.Type = token.LookupIdent(tok.Literal)
 			return tok
-		} else if isDigit(l.char) {
+		} else if unicode.IsDigit(l.char) {
 			tok.Literal = l.readNumber()
 			tok.Type = token.INT
 			return tok
@@ -139,10 +145,26 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
-func isLetter(char byte) bool {
-	return 'a' <= char && char <= 'z' || 'A' <= char && char <= 'z' || char == '_'
+func isValidIdentifierChar(char rune) bool {
+	return unicode.IsLetter(char) || hasEmoji(int(char))
 }
 
-func isDigit(char byte) bool {
-	return '0' <= char && char <= '9'
+func hasEmoji(charCode int) bool {
+	rangeMin := '\U0001F300'
+	rangeMax := '\U0001FAF6'
+	rangeMin2 := 126980
+	rangeMax2 := 127569
+	rangeMin3 := 169
+	rangeMax3 := 174
+	rangeMin4 := 8205
+	rangeMax4 := 12953
+
+	if (charCode >= int(rangeMin) && charCode <= int(rangeMax)) ||
+		(charCode >= rangeMin2 && charCode <= rangeMax2) ||
+		(charCode >= rangeMin3 && charCode <= rangeMax3) ||
+		(charCode >= rangeMin4 && charCode <= rangeMax4) {
+		return true
+	}
+
+	return false
 }
