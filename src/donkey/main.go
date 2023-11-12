@@ -18,4 +18,7 @@ func main() {
 	fmt.Printf("Feel free to type in commands\n")
 
 	repl.Start(os.Stdin, os.Stdout)
+
+	// clear console colors on close
+	defer func() { fmt.Println("\u001b[39m") }()
 }
