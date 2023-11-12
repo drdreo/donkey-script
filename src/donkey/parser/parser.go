@@ -60,8 +60,11 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.registerPrefixFn(token.IDENT, p.parseIdentifier)
 	p.registerPrefixFn(token.INT, p.parseIntegerLiteral)
+	p.registerPrefixFn(token.TRUE, p.parseBooleanLiteral)
+	p.registerPrefixFn(token.FALSE, p.parseBooleanLiteral)
 	p.registerPrefixFn(token.BANG, p.parsePrefixExpression)
 	p.registerPrefixFn(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefixFn(token.LPAREN, p.parseGroupedExpression)
 
 	p.registerInfixFn(token.PLUS, p.parseInfixExpression)
 	p.registerInfixFn(token.MINUS, p.parseInfixExpression)
@@ -151,12 +154,15 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	if !p.expectPeek(token.ASSIGN) {
 		return nil
 	}
-	// TODO: skip expressions
 
-	// encounter a semicolon
-	for !p.curTokenIs(token.SEMICOLON) {
+	p.nextToken()
+
+	stmt.Value = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
+
 	return stmt
 }
 
@@ -165,19 +171,30 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 
 	p.nextToken()
 
-	// TODO skip expression
+	stmt.ReturnValue = p.parseExpression(LOWEST)
 
-	for !p.curTokenIs(token.SEMICOLON) {
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
+
 	return stmt
 }
 
 func (p *Parser) parseIdentifier() ast.Expression {
+	defer untrace(trace("parseIdentifier"))
+
 	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 }
 
+func (p *Parser) parseBooleanLiteral() ast.Expression {
+	defer untrace(trace("parseBooleanLiteral"))
+
+	return &ast.BooleanLiteral{Token: p.curToken, Value: p.curTokenIs(token.TRUE)}
+}
+
 func (p *Parser) parseIntegerLiteral() ast.Expression {
+	defer untrace(trace("parseIntegerLiteral"))
+
 	exp := &ast.IntegerLiteral{Token: p.curToken}
 
 	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64) // strconv.Atoi(s) could be used too and faster
@@ -192,6 +209,8 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {
+	defer untrace(trace("parsePrefixExpression"))
+
 	exp := &ast.PrefixExpression{Token: p.curToken, Operator: p.curToken.Literal}
 
 	p.nextToken()
@@ -201,6 +220,8 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 }
 
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	defer untrace(trace("parseInfixExpression"))
+
 	exp := &ast.InfixExpression{Token: p.curToken, Operator: p.curToken.Literal, Left: left}
 
 	precedence := p.curPrecedence()
@@ -221,7 +242,19 @@ func (p *Parser) noInfixParseFnError(t token.TokenType) {
 	p.addParseError(msg)
 }
 
+func (p *Parser) parseGroupedExpression() ast.Expression {
+	p.nextToken()
+	exp := p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+	return exp
+}
+
 func (p *Parser) parseExpression(precedence int) ast.Expression {
+	defer untrace(trace("parseExpression"))
+
 	prefixFn := p.prefixParseFns[p.curToken.Type]
 	if prefixFn == nil {
 		p.noPrefixParseFnError(p.curToken.Type)
@@ -243,6 +276,8 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 }
 
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	defer untrace(trace("parseExpressionStatement"))
+
 	stmt := &ast.ExpressionStatement{Token: p.curToken}
 	stmt.Expression = p.parseExpression(LOWEST)
 
