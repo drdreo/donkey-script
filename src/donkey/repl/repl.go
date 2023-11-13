@@ -3,7 +3,9 @@ package repl
 import (
 	"bufio"
 	"donkey/constants"
+	"donkey/evaluator"
 	"donkey/lexer"
+	"donkey/object"
 	"donkey/parser"
 	"fmt"
 	"io"
@@ -11,6 +13,7 @@ import (
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	env := object.NewEnvironment()
 
 	for {
 		fmt.Fprintf(out, constants.ReplPrompt)
@@ -30,9 +33,11 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		io.WriteString(out, program.String())
-		io.WriteString(out, "\n")
-
+		evaled := evaluator.Eval(program, env)
+		if evaled != nil {
+			io.WriteString(out, evaled.Inspect())
+			io.WriteString(out, "\n")
+		}
 	}
 }
 
