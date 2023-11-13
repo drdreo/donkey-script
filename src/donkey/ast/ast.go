@@ -82,8 +82,6 @@ func (ls *LetStatement) String() string {
 
 	if ls.Value != nil {
 		out.WriteString(ls.Value.String())
-	} else {
-		out.WriteString("nil")
 	}
 
 	out.WriteString(";")
@@ -109,8 +107,6 @@ func (rs *ReturnStatement) String() string {
 	out.WriteString(rs.TokenLiteral() + " ")
 	if rs.ReturnValue != nil {
 		out.WriteString(rs.ReturnValue.String())
-	} else {
-		out.WriteString("nil")
 	}
 
 	return out.String()
@@ -132,7 +128,7 @@ func (es *ExpressionStatement) String() string {
 	if es.Expression != nil {
 		return es.Expression.String()
 	}
-	return "nil"
+	return ""
 }
 
 // BlockStatement
@@ -150,10 +146,11 @@ func (bs *BlockStatement) TokenLiteral() string {
 func (bs *BlockStatement) String() string {
 	var out bytes.Buffer
 
-	for _, stmt := range bs.Statements {
-		out.WriteString(stmt.String())
+	for _, s := range bs.Statements {
+		out.WriteString(s.String())
 	}
-	return "nil"
+
+	return out.String()
 }
 
 // BooleanLiteral
