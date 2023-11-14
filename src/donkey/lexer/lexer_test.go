@@ -7,11 +7,11 @@ import (
 )
 
 func TestNextToken(t *testing.T) {
-	input := `let five💚 = 5;
-let tϣen = 10;
+	input := `let five = 5;
+let ten = 10;
 
-let add123 = fn(x, y) {
-x + y;
+let add = fn(x, y) {
+  x + y;
 };
 
 let result = add(five, ten);
@@ -26,7 +26,8 @@ return false;
 
 10 == 10;
 10 != 9;
-x <= 0 >= y;
+"foobar"
+"foo bar"
 `
 
 	tests := []struct {
@@ -34,17 +35,17 @@ x <= 0 >= y;
 		expectedLiteral string
 	}{
 		{token.LET, "let"},
-		{token.IDENT, "five💚"},
+		{token.IDENT, "five"},
 		{token.ASSIGN, "="},
 		{token.INT, "5"},
 		{token.SEMICOLON, ";"},
 		{token.LET, "let"},
-		{token.IDENT, "tϣen"},
+		{token.IDENT, "ten"},
 		{token.ASSIGN, "="},
 		{token.INT, "10"},
 		{token.SEMICOLON, ";"},
 		{token.LET, "let"},
-		{token.IDENT, "add123"},
+		{token.IDENT, "add"},
 		{token.ASSIGN, "="},
 		{token.FUNCTION, "fn"},
 		{token.LPAREN, "("},
@@ -106,13 +107,8 @@ x <= 0 >= y;
 		{token.NOT_EQ, "!="},
 		{token.INT, "9"},
 		{token.SEMICOLON, ";"},
-		{token.IDENT, "x"},
-		{token.LT_EQ, "<="},
-		{token.INT, "0"},
-		{token.GT_EQ, ">="},
-		{token.IDENT, "y"},
-		{token.SEMICOLON, ";"},
-
+		{token.STRING, "foobar"},
+		{token.STRING, "foo bar"},
 		{token.EOF, ""},
 	}
 

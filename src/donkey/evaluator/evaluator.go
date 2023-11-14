@@ -4,6 +4,7 @@ import (
 	"donkey/ast"
 	"donkey/object"
 	"fmt"
+	"strings"
 )
 
 // objects for referencing
@@ -73,6 +74,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return nativeBoolToBooleanObject(node.Value)
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
+	case *ast.StringLiteral:
+		return &object.String{Value: node.Value}
 	case *ast.FunctionLiteral:
 		params := node.Parameters
 		body := node.Body
@@ -203,10 +206,30 @@ func evalIntegerInfixExpression(operator string, left, right object.Object) obje
 	}
 }
 
+func evalStringInfixExpression(operator string, left, right object.Object) object.Object {
+	lVal := left.(*object.String).Value
+	rVal := right.(*object.String).Value
+
+	switch operator {
+	case "+":
+		return &object.String{Value: lVal + rVal}
+	case "-":
+		return &object.String{Value: strings.ReplaceAll(lVal, rVal, "")}
+	case "==":
+		return nativeBoolToBooleanObject(lVal == rVal)
+	case "!=":
+		return nativeBoolToBooleanObject(lVal != rVal)
+	default:
+		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+	}
+}
+
 func evalInfixExpression(operator string, left, right object.Object) object.Object {
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, left, right)
+	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+		return evalStringInfixExpression(operator, left, right)
 
 	case operator == "==":
 		return nativeBoolToBooleanObject(left == right)
