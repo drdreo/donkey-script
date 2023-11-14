@@ -280,6 +280,7 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	return unwrapReturnValue(evaled)
 }
 
+// copies existing env values over to new one
 func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {
 	env := object.NewEnclosedEnvironment(fn.Env)
 
@@ -287,4 +288,12 @@ func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Enviro
 		env.Set(param.Value, args[paramIdx])
 	}
 	return env
+}
+
+// we need to unwrap it otherwise a return statement would bubble up and stop the evaluation
+func unwrapReturnValue(obj object.Object) object.Object {
+	if rV, ok := obj.(*object.ReturnValue); ok {
+		return rV.Value
+	}
+	return obj
 }
