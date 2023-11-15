@@ -422,6 +422,7 @@ func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
 
 	if p.peekTokenIs(end) {
 		p.nextToken()
+		return list
 	}
 
 	p.nextToken()
