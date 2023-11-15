@@ -255,11 +255,13 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 }
 
 func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
-	val, ok := env.Get(node.Value)
-	if !ok {
-		return newError("identifier not found: " + node.Value)
+	if val, ok := env.Get(node.Value); ok {
+		return val
 	}
-	return val
+	if builtin, ok := builtins[node.Value]; ok {
+		return builtin
+	}
+	return newError("identifier not found: " + node.Value)
 }
 
 // ____________
@@ -293,14 +295,18 @@ func isError(obj object.Object) bool {
 }
 
 func applyFunction(fn object.Object, args []object.Object) object.Object {
-	fun, ok := fn.(*object.Function)
-	if !ok {
+	switch fun := fn.(type) {
+	case *object.Function:
+		extendedEnv := extendFunctionEnv(fun, args)
+		evaled := Eval(fun.Body, extendedEnv)
+		return unwrapReturnValue(evaled)
+
+	case *object.Builtin:
+		return fun.Fn(args...)
+
+	default:
 		return newError("not a function: %s", fn.Type())
 	}
-
-	extendedEnv := extendFunctionEnv(fun, args)
-	evaled := Eval(fun.Body, extendedEnv)
-	return unwrapReturnValue(evaled)
 }
 
 // copies existing env values over to new one

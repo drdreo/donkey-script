@@ -7,7 +7,8 @@ import (
 )
 
 func TestNextToken(t *testing.T) {
-	input := `let five = 5;
+	input := `
+let 🥰 = 5;
 let ten = 10;
 
 let add = fn(x, y) {
@@ -19,15 +20,17 @@ let result = add(five, ten);
 5 < 10 > 5;
 
 if (5 < 10) {
-return true;
+	return true;
 } else {
-return false;
+	return false;
 }
 
 10 == 10;
 10 != 9;
 "foobar"
 "foo bar"
+[1, 2];
+{"foo": "bar"}
 `
 
 	tests := []struct {
@@ -35,7 +38,7 @@ return false;
 		expectedLiteral string
 	}{
 		{token.LET, "let"},
-		{token.IDENT, "five"},
+		{token.IDENT, "🥰"},
 		{token.ASSIGN, "="},
 		{token.INT, "5"},
 		{token.SEMICOLON, ";"},
@@ -109,6 +112,17 @@ return false;
 		{token.SEMICOLON, ";"},
 		{token.STRING, "foobar"},
 		{token.STRING, "foo bar"},
+		{token.LBRACKET, "["},
+		{token.INT, "1"},
+		{token.COMMA, ","},
+		{token.INT, "2"},
+		{token.RBRACKET, "]"},
+		{token.SEMICOLON, ";"},
+		{token.LBRACE, "{"},
+		{token.STRING, "foo"},
+		{token.COLON, ":"},
+		{token.STRING, "bar"},
+		{token.RBRACE, "}"},
 		{token.EOF, ""},
 	}
 

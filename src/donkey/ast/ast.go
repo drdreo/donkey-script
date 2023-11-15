@@ -198,6 +198,28 @@ func (sl *StringLiteral) String() string {
 	return sl.Token.Literal
 }
 
+// ArrayLiteral
+// -------------
+type ArrayLiteral struct {
+	Token    token.Token
+	Elements []Expression
+}
+
+func (al *ArrayLiteral) expressionNode() {}
+func (al *ArrayLiteral) TokenLiteral() string {
+	return al.Token.Literal
+}
+func (al *ArrayLiteral) String() string {
+	var out bytes.Buffer
+
+	elements := []string{}
+	for _, el := range al.Elements {
+		elements = append(elements, el.String())
+	}
+
+	return out.String()
+}
+
 // FunctionLiteral
 // -------------
 type FunctionLiteral struct {
