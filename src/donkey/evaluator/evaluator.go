@@ -54,6 +54,17 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return right
 		}
 		return evalInfixExpression(node.Operator, left, right)
+
+	case *ast.IndexExpression:
+		left := Eval(node.Left, env)
+		if isError(left) {
+			return left
+		}
+		idx := Eval(node.Index, env)
+		if isError(idx) {
+			return idx
+		}
+		return evalIndexExpression(left, idx)
 	case *ast.IfExpression:
 		return evalIfExpression(node, env)
 	case *ast.Identifier:
@@ -76,6 +87,12 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Integer{Value: node.Value}
 	case *ast.StringLiteral:
 		return &object.String{Value: node.Value}
+	case *ast.ArrayLiteral:
+		elements := evalExpressions(node.Elements, env)
+		if len(elements) == 1 && isError(elements[0]) {
+			return elements[0]
+		}
+		return &object.Array{Elements: elements}
 	case *ast.FunctionLiteral:
 		params := node.Parameters
 		body := node.Body
@@ -240,6 +257,33 @@ func evalInfixExpression(operator string, left, right object.Object) object.Obje
 		return newError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
 	default:
 		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+	}
+}
+
+func evalArrayIndexExpression(arr object.Object, idx object.Object) object.Object {
+	ao, ok := arr.(*object.Array)
+	if !ok {
+		return newError("type mismatch for array index operation. got=%s", arr.Type())
+
+	}
+
+	i := idx.(*object.Integer).Value
+	length := int64(len(ao.Elements) - 1)
+
+	// TODO: support negative index to go from the back - [-3]
+	if i < 0 || i > length {
+		return NULL
+	}
+
+	return ao.Elements[i]
+}
+
+func evalIndexExpression(left object.Object, index object.Object) object.Object {
+	switch {
+	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		return evalArrayIndexExpression(left, index)
+	default:
+		return newError("index operator not supported: %s", left.Type())
 	}
 }
 
