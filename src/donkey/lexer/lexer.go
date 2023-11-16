@@ -7,14 +7,17 @@ import (
 )
 
 type Lexer struct {
-	input   string
-	pos     int  // current position in input (points to current char)
-	readPos int  // current reading position in input (after current char)
-	char    rune // current character under examination
+	input       string
+	pos         int  // current position in input (points to current char)
+	readPos     int  // current reading position in input (after current char)
+	char        rune // current character under examination
+	Line        int  // current reading line
+	Column      int  // current column in the current line
+	StartColumn int  // current column in the current line
 }
 
 func New(input string) *Lexer {
-	l := &Lexer{input: input}
+	l := &Lexer{input: input, Line: 1}
 	l.readChar()
 	return l
 }
@@ -31,6 +34,7 @@ func (l *Lexer) readChar() {
 	}
 	l.pos = l.readPos
 	l.readPos += stepSize
+	l.Column += 1
 }
 
 func (l *Lexer) peekChar() rune {
@@ -42,15 +46,19 @@ func (l *Lexer) peekChar() rune {
 	}
 }
 
-func newToken(tokenType token.TokenType, char rune) token.Token {
-	return token.Token{Type: tokenType, Literal: string(char)}
+func (l *Lexer) newTok(tokenType token.TokenType, literal string) token.Token {
+	return token.Token{Type: tokenType, Literal: literal, Line: l.Line, Column: l.StartColumn}
+}
+
+func (l *Lexer) newToken(tokenType token.TokenType, char rune) token.Token {
+	return l.newTok(tokenType, string(char))
 }
 
 func (l *Lexer) newTwoCharToken(tokenType token.TokenType) token.Token {
 	char := l.char
 	l.readChar()
 	lit := string(char) + string(l.char)
-	return token.Token{Type: tokenType, Literal: lit}
+	return l.newTok(tokenType, lit)
 }
 
 func (l *Lexer) readIdentifier() string {
@@ -84,6 +92,12 @@ func (l *Lexer) readString() string {
 
 func (l *Lexer) skipWhitespace() {
 	for unicode.IsSpace(l.char) {
+		if l.char == '\n' {
+			// reset new line
+			l.Line = l.Line + 1
+			l.Column = 0
+		}
+
 		l.readChar()
 	}
 }
@@ -92,74 +106,73 @@ func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
 	l.skipWhitespace()
+	l.StartColumn = l.Column
+
 	switch l.char {
 	case '=':
 		if l.peekChar() == '=' {
 			tok = l.newTwoCharToken(token.EQ)
 		} else {
-			tok = newToken(token.ASSIGN, l.char)
+			tok = l.newToken(token.ASSIGN, l.char)
 		}
 	case '+':
-		tok = newToken(token.PLUS, l.char)
+		tok = l.newToken(token.PLUS, l.char)
 	case '-':
-		tok = newToken(token.MINUS, l.char)
+		tok = l.newToken(token.MINUS, l.char)
 	case '!':
 		if l.peekChar() == '=' {
 			tok = l.newTwoCharToken(token.NOT_EQ)
 		} else {
-			tok = newToken(token.BANG, l.char)
+			tok = l.newToken(token.BANG, l.char)
 		}
 	case '/':
-		tok = newToken(token.SLASH, l.char)
+		tok = l.newToken(token.SLASH, l.char)
 	case '*':
-		tok = newToken(token.ASTERISK, l.char)
+		tok = l.newToken(token.ASTERISK, l.char)
 	case '<':
 		if l.peekChar() == '=' {
 			tok = l.newTwoCharToken(token.LT_EQ)
 		} else {
-			tok = newToken(token.LT, l.char)
+			tok = l.newToken(token.LT, l.char)
 		}
 	case '>':
 		if l.peekChar() == '=' {
 			tok = l.newTwoCharToken(token.GT_EQ)
 		} else {
-			tok = newToken(token.GT, l.char)
+			tok = l.newToken(token.GT, l.char)
 		}
 	case ';':
-		tok = newToken(token.SEMICOLON, l.char)
+		tok = l.newToken(token.SEMICOLON, l.char)
 	case ':':
-		tok = newToken(token.COLON, l.char)
+		tok = l.newToken(token.COLON, l.char)
 	case ',':
-		tok = newToken(token.COMMA, l.char)
+		tok = l.newToken(token.COMMA, l.char)
 	case '(':
-		tok = newToken(token.LPAREN, l.char)
+		tok = l.newToken(token.LPAREN, l.char)
 	case ')':
-		tok = newToken(token.RPAREN, l.char)
+		tok = l.newToken(token.RPAREN, l.char)
 	case '{':
-		tok = newToken(token.LBRACE, l.char)
+		tok = l.newToken(token.LBRACE, l.char)
 	case '}':
-		tok = newToken(token.RBRACE, l.char)
+		tok = l.newToken(token.RBRACE, l.char)
 	case '[':
-		tok = newToken(token.LBRACKET, l.char)
+		tok = l.newToken(token.LBRACKET, l.char)
 	case ']':
-		tok = newToken(token.RBRACKET, l.char)
+		tok = l.newToken(token.RBRACKET, l.char)
 	case '"':
-		tok.Type = token.STRING
-		tok.Literal = l.readString()
+		tok = l.newTok(token.STRING, l.readString())
 	case 0:
-		tok.Literal = ""
-		tok.Type = token.EOF
+		tok = l.newTok(token.EOF, "")
 	default:
 		if isValidIdentifierChar(l.char) {
-			tok.Literal = l.readIdentifier()
-			tok.Type = token.LookupIdent(tok.Literal)
-			return tok
+			ident := l.readIdentifier()
+			tT := token.LookupIdent(ident)
+			return l.newTok(tT, ident)
 		} else if unicode.IsDigit(l.char) {
-			tok.Literal = l.readNumber()
-			tok.Type = token.INT
-			return tok
+			tL := l.readNumber()
+			return l.newTok(token.INT, tL)
 		} else {
-			tok = newToken(token.ILLEGAL, l.char)
+			tok = l.newToken(token.ILLEGAL, l.char)
 		}
 	}
 

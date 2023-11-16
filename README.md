@@ -5,3 +5,4 @@
 
 - add http GET request, make it blocking, then non-blocking with go routines
 - add import files support
+- add error line and columns

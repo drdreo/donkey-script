@@ -142,3 +142,86 @@ if (5 < 10) {
 		}
 	}
 }
+
+func TestLexerLinesAndColumns(t *testing.T) {
+	input := `
+let 🥰 = 5;
+let ten = 10;
+
+let add = fn(x, y) {
+x + y;
+};
+
+let result = add(five, ten);`
+
+	tests := []struct {
+		expectedType    token.TokenType
+		expectedLiteral string
+		expectedLine    int
+		expectedColumn  int
+	}{
+		{token.LET, "let", 2, 1},
+		{token.IDENT, "🥰", 2, 5},
+		{token.ASSIGN, "=", 2, 7},
+		{token.INT, "5", 2, 9},
+		{token.SEMICOLON, ";", 2, 10},
+		{token.LET, "let", 3, 1},
+		{token.IDENT, "ten", 3, 5},
+		{token.ASSIGN, "=", 3, 9},
+		{token.INT, "10", 3, 11},
+		{token.SEMICOLON, ";", 3, 13},
+		{token.LET, "let", 5, 1},
+		{token.IDENT, "add", 5, 5},
+		{token.ASSIGN, "=", 5, 9},
+		{token.FUNCTION, "fn", 5, 11},
+		{token.LPAREN, "(", 5, 13},
+		{token.IDENT, "x", 5, 14},
+		{token.COMMA, ",", 5, 15},
+		{token.IDENT, "y", 5, 17},
+		{token.RPAREN, ")", 5, 18},
+		{token.LBRACE, "{", 5, 20},
+		{token.IDENT, "x", 6, 1},
+		{token.PLUS, "+", 6, 3},
+		{token.IDENT, "y", 6, 5},
+		{token.SEMICOLON, ";", 6, 6},
+		{token.RBRACE, "}", 7, 1},
+		{token.SEMICOLON, ";", 7, 2},
+		{token.LET, "let", 9, 1},
+		{token.IDENT, "result", 9, 5},
+		{token.ASSIGN, "=", 9, 12},
+		{token.IDENT, "add", 9, 14},
+		{token.LPAREN, "(", 9, 17},
+		{token.IDENT, "five", 9, 18},
+		{token.COMMA, ",", 9, 22},
+		{token.IDENT, "ten", 9, 24},
+		{token.RPAREN, ")", 9, 27},
+		{token.SEMICOLON, ";", 9, 28},
+		{token.EOF, "", 9, 29},
+	}
+
+	l := New(input)
+
+	for i, tt := range tests {
+		tok := l.NextToken()
+
+		if tok.Type != tt.expectedType {
+			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q",
+				i, tt.expectedType, tok.Type)
+		}
+
+		if tok.Literal != tt.expectedLiteral {
+			t.Fatalf("tests[%d] - literal wrong. expected=%q, got=%q",
+				i, tt.expectedLiteral, tok.Literal)
+		}
+
+		if tok.Line != tt.expectedLine {
+			t.Fatalf("tests[%d] - line number wrong. expected=%d, got=%d",
+				i, tt.expectedLine, tok.Line)
+		}
+
+		if tok.Column != tt.expectedColumn {
+			t.Fatalf("tests[%d] - column number wrong. expected=%d, got=%d",
+				i, tt.expectedColumn, tok.Column)
+		}
+	}
+}
