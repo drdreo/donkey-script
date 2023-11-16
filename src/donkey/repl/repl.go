@@ -41,16 +41,8 @@ func Start(in io.Reader, out io.Writer) {
 	}
 }
 
-const DONKEY_FACE = `
-_\
-/b
-/####J
-|\ || Yikes
-`
-
 func printParserErrors(out io.Writer, errors []string) {
-	io.WriteString(out, DONKEY_FACE)
-	io.WriteString(out, " parser errors:\n")
+	io.WriteString(out, constants.ParserErrorPrompt)
 	for _, msg := range errors {
 		io.WriteString(out, "\t"+msg+"\n")
 	}

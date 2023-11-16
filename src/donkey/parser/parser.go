@@ -115,7 +115,8 @@ func (p *Parser) peekTokenIs(t token.TokenType) bool {
 }
 
 func (p *Parser) addParseError(msg string) {
-	p.errors = append(p.errors, msg)
+	lineColumnInfo := fmt.Sprintf("\u001b[31mLine: %d, col: %d >> ", p.curToken.Location.Line, p.curToken.Location.Column)
+	p.errors = append(p.errors, lineColumnInfo+msg+"\u001b[0m")
 }
 
 func (p *Parser) peekError(t token.TokenType) {

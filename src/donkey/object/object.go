@@ -3,6 +3,7 @@ package object
 import (
 	"bytes"
 	"donkey/ast"
+	"donkey/token"
 	"fmt"
 	"strings"
 )
@@ -22,14 +23,19 @@ const (
 )
 
 type Error struct {
-	Message string
+	Message  string
+	Location *token.TokenLocation
 }
 
 func (e *Error) Type() ObjectType {
 	return ERROR_OBJ
 }
 func (e *Error) Inspect() string {
-	return "Error: " + e.Message // TODO: add line + colmn 
+	lineColumnInfo := ""
+	if e.Location != nil {
+		lineColumnInfo = fmt.Sprintf("\u001b[31mLine: %d, col: %d", e.Location.Line, e.Location.Column)
+	}
+	return fmt.Sprintf("Runtime error: %s >> %s", lineColumnInfo, e.Message) // TODO: add line + colmn
 }
 
 type Object interface {

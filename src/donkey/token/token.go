@@ -47,11 +47,15 @@ const (
 
 type TokenType string
 
+type TokenLocation struct {
+	Line   int
+	Column int
+}
+
 type Token struct {
-	Type    TokenType
-	Literal string
-	Line    int
-	Column  int
+	Type     TokenType
+	Literal  string
+	Location TokenLocation
 }
 
 var keywords = map[string]TokenType{

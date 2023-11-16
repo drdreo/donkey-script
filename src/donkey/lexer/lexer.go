@@ -47,7 +47,7 @@ func (l *Lexer) peekChar() rune {
 }
 
 func (l *Lexer) newTok(tokenType token.TokenType, literal string) token.Token {
-	return token.Token{Type: tokenType, Literal: literal, Line: l.Line, Column: l.StartColumn}
+	return token.Token{Type: tokenType, Literal: literal, Location: token.TokenLocation{Line: l.Line, Column: l.StartColumn}}
 }
 
 func (l *Lexer) newToken(tokenType token.TokenType, char rune) token.Token {

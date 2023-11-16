@@ -3,6 +3,7 @@ package evaluator
 import (
 	"donkey/ast"
 	"donkey/object"
+	"donkey/token"
 	"fmt"
 	"strings"
 )
@@ -14,6 +15,7 @@ var (
 	NULL  = &object.Null{}
 )
 
+// TODO: potentially replace passing the location around with a context instead
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 
@@ -43,7 +45,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if isError(right) {
 			return right
 		}
-		return evalPrefixExpression(node.Operator, right)
+		return evalPrefixExpression(node.Operator, right, &node.Token.Location)
 	case *ast.InfixExpression:
 		left := Eval(node.Left, env)
 		if isError(left) {
@@ -53,7 +55,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if isError(right) {
 			return right
 		}
-		return evalInfixExpression(node.Operator, left, right)
+		return evalInfixExpression(node.Operator, left, right, &node.Token.Location)
 
 	case *ast.IndexExpression:
 		left := Eval(node.Left, env)
@@ -64,7 +66,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if isError(idx) {
 			return idx
 		}
-		return evalIndexExpression(left, idx)
+		return evalIndexExpression(left, idx, &node.Token.Location)
 	case *ast.IfExpression:
 		return evalIfExpression(node, env)
 	case *ast.Identifier:
@@ -78,7 +80,11 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if len(args) == 1 && isError(args[0]) {
 			return args[0]
 		}
-		return applyFunction(fn, args)
+		res := applyFunction(fn, &node.Token.Location, args)
+		if isError(res) {
+			res.(*object.Error).Location = &node.Token.Location
+		}
+		return res
 
 	// Literals
 	case *ast.BooleanLiteral:
@@ -153,14 +159,14 @@ func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 	return result
 }
 
-func evalPrefixExpression(operator string, right object.Object) object.Object {
+func evalPrefixExpression(operator string, right object.Object, loc *token.TokenLocation) object.Object {
 	switch operator {
 	case "!":
 		return evalBangOperatorExpression(right)
 	case "-":
-		return evalMinusOperatorExpression(right)
+		return evalMinusOperatorExpression(right, loc)
 	default:
-		return newError("unknown operator: %s%s", operator, right.Type())
+		return newError("unknown operator: %s%s", loc, operator, right.Type())
 	}
 }
 
@@ -177,9 +183,9 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 	}
 }
 
-func evalMinusOperatorExpression(right object.Object) object.Object {
+func evalMinusOperatorExpression(right object.Object, loc *token.TokenLocation) object.Object {
 	if right.Type() != object.INTEGER_OBJ {
-		return newError("unknown operator: -%s", right.Type())
+		return newError("unknown operator: -%s", loc, right.Type())
 	}
 	value := right.(*object.Integer).Value
 	return &object.Integer{Value: -value}
@@ -192,7 +198,7 @@ func nativeBoolToBooleanObject(input bool) *object.Boolean {
 	return FALSE
 }
 
-func evalIntegerInfixExpression(operator string, left, right object.Object) object.Object {
+func evalIntegerInfixExpression(operator string, left, right object.Object, loc *token.TokenLocation) object.Object {
 	lVal := left.(*object.Integer).Value
 	rVal := right.(*object.Integer).Value
 
@@ -219,11 +225,11 @@ func evalIntegerInfixExpression(operator string, left, right object.Object) obje
 	case "!=":
 		return nativeBoolToBooleanObject(lVal != rVal)
 	default:
-		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+		return newError("unknown operator: %s %s %s", loc, left.Type(), operator, right.Type())
 	}
 }
 
-func evalStringInfixExpression(operator string, left, right object.Object) object.Object {
+func evalStringInfixExpression(operator string, left, right object.Object, loc *token.TokenLocation) object.Object {
 	lVal := left.(*object.String).Value
 	rVal := right.(*object.String).Value
 
@@ -237,16 +243,16 @@ func evalStringInfixExpression(operator string, left, right object.Object) objec
 	case "!=":
 		return nativeBoolToBooleanObject(lVal != rVal)
 	default:
-		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+		return newError("unknown operator: %s %s %s", loc, left.Type(), operator, right.Type())
 	}
 }
 
-func evalInfixExpression(operator string, left, right object.Object) object.Object {
+func evalInfixExpression(operator string, left, right object.Object, loc *token.TokenLocation) object.Object {
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
-		return evalIntegerInfixExpression(operator, left, right)
+		return evalIntegerInfixExpression(operator, left, right, loc)
 	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
-		return evalStringInfixExpression(operator, left, right)
+		return evalStringInfixExpression(operator, left, right, loc)
 
 	case operator == "==":
 		return nativeBoolToBooleanObject(left == right)
@@ -254,16 +260,16 @@ func evalInfixExpression(operator string, left, right object.Object) object.Obje
 		return nativeBoolToBooleanObject(left != right)
 
 	case left.Type() != right.Type():
-		return newError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
+		return newError("type mismatch: %s %s %s", loc, left.Type(), operator, right.Type())
 	default:
-		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+		return newError("unknown operator: %s %s %s", loc, left.Type(), operator, right.Type())
 	}
 }
 
-func evalArrayIndexExpression(arr object.Object, idx object.Object) object.Object {
+func evalArrayIndexExpression(arr object.Object, idx object.Object, loc *token.TokenLocation) object.Object {
 	ao, ok := arr.(*object.Array)
 	if !ok {
-		return newError("type mismatch for array index operation. got=%s", arr.Type())
+		return newError("type mismatch for array index operation. got=%s", loc, arr.Type())
 
 	}
 
@@ -278,12 +284,12 @@ func evalArrayIndexExpression(arr object.Object, idx object.Object) object.Objec
 	return ao.Elements[i]
 }
 
-func evalIndexExpression(left object.Object, index object.Object) object.Object {
+func evalIndexExpression(left object.Object, index object.Object, loc *token.TokenLocation) object.Object {
 	switch {
 	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
-		return evalArrayIndexExpression(left, index)
+		return evalArrayIndexExpression(left, index, loc)
 	default:
-		return newError("index operator not supported: %s", left.Type())
+		return newError("index operator not supported: %s", loc, left.Type())
 	}
 }
 
@@ -305,7 +311,7 @@ func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object
 	if builtin, ok := builtins[node.Value]; ok {
 		return builtin
 	}
-	return newError("identifier not found: " + node.Value)
+	return newError("identifier not found: "+node.Value, &node.Token.Location)
 }
 
 // ____________
@@ -327,8 +333,8 @@ func isTruthy(obj object.Object) bool {
 	}
 }
 
-func newError(format string, a ...interface{}) *object.Error {
-	return &object.Error{Message: fmt.Sprintf(format, a...)}
+func newError(format string, location *token.TokenLocation, a ...interface{}) *object.Error {
+	return &object.Error{Message: fmt.Sprintf(format, a...), Location: location}
 }
 
 func isError(obj object.Object) bool {
@@ -338,7 +344,7 @@ func isError(obj object.Object) bool {
 	return false
 }
 
-func applyFunction(fn object.Object, args []object.Object) object.Object {
+func applyFunction(fn object.Object, loc *token.TokenLocation, args []object.Object) object.Object {
 	switch fun := fn.(type) {
 	case *object.Function:
 		extendedEnv := extendFunctionEnv(fun, args)
@@ -349,7 +355,7 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 		return fun.Fn(args...)
 
 	default:
-		return newError("not a function: %s", fn.Type())
+		return newError("not a function: %s", loc, fn.Type())
 	}
 }
 

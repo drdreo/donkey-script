@@ -214,14 +214,16 @@ let result = add(five, ten);`
 				i, tt.expectedLiteral, tok.Literal)
 		}
 
-		if tok.Line != tt.expectedLine {
+		line := tok.Location.Line
+		col := tok.Location.Column
+		if line != tt.expectedLine {
 			t.Fatalf("tests[%d] - line number wrong. expected=%d, got=%d",
-				i, tt.expectedLine, tok.Line)
+				i, tt.expectedLine, line)
 		}
 
-		if tok.Column != tt.expectedColumn {
+		if col != tt.expectedColumn {
 			t.Fatalf("tests[%d] - column number wrong. expected=%d, got=%d",
-				i, tt.expectedColumn, tok.Column)
+				i, tt.expectedColumn, col)
 		}
 	}
 }

@@ -3,8 +3,17 @@ runnings test coverage
 
 # New Features
 
+# Error Handling
+
+[x] added line and column numbers
+[ ] show code where error occured
+
 ## Strings
 
-string concatenation:   `"he" + "yo" = "heyo"`
-string substraction:    `"hey ho there" - "ho" = "hey  there"`
-string equal:          `"hey" == "hey" = true`
+[x] string concatenation:   `"he" + "yo" = "heyo"`
+[x] string substraction:    `"hey ho there" - "ho" = "hey  there"`
+[x] string equal:           `"hey" == "hey" = true`
+
+## Numbers
+
+[ ] fix edge case arithmetic : `1 / 0`
