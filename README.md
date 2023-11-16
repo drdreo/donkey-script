@@ -1,5 +1,8 @@
 [![CI](https://github.com/drdreo/donkey-script/actions/workflows/go.yml/badge.svg)](https://github.com/drdreo/donkey-script/actions/workflows/go.yml)
 
+# REPL
+Run `go run .` in `/src/donkey` to execute the REPL.
+
 ## Testing
 runnings test coverage
 `go test -coverpkg=./... ./...`
@@ -22,5 +25,6 @@ runnings test coverage
 
 
 ## Builtins
-[] add http GET request, make it blocking, then non-blocking with go routines
-[] add import files support
+[x] add blocking http GET request
+[ ] make http fetch non-blocking with go routines
+[ ] add import files support
