@@ -286,10 +286,34 @@ func evalArrayIndexExpression(arr object.Object, idx object.Object, loc *token.T
 	return ao.Elements[i]
 }
 
+func evalHashIndexExpression(hash object.Object, idx object.Object, loc *token.TokenLocation) object.Object {
+	ho, ok := hash.(*object.Hash)
+	if !ok {
+		return newError("type mismatch for hash index operation. got=%s", loc, hash.Type())
+
+	}
+
+	hashKey, ok := idx.(object.Hashable)
+	if !ok {
+		return newError("unusable as hash key: %s", loc, idx.Type())
+	}
+
+	hashed := hashKey.HashKey()
+
+	pair, ok := ho.Pairs[hashed]
+	if !ok {
+		return NULL
+	}
+
+	return pair.Value
+}
+
 func evalIndexExpression(left object.Object, index object.Object, loc *token.TokenLocation) object.Object {
 	switch {
 	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
 		return evalArrayIndexExpression(left, index, loc)
+	case left.Type() == object.HASH_OBJ:
+		return evalHashIndexExpression(left, index, loc)
 	default:
 		return newError("index operator not supported: %s", loc, left.Type())
 	}
