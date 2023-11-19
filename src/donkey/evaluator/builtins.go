@@ -2,6 +2,7 @@ package evaluator
 
 import (
 	"donkey/object"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -9,6 +10,7 @@ import (
 var builtins = map[string]*object.Builtin{
 	"len":   builtinLen(),
 	"fetch": builtinFetch(),
+	"print": builtinPrint(),
 }
 
 func builtinLen() *object.Builtin {
@@ -25,6 +27,23 @@ func builtinLen() *object.Builtin {
 			default:
 				return newError("argument to `len` not supported, got=%s", nil, args[0].Type())
 			}
+		},
+	}
+}
+
+func builtinPrint() *object.Builtin {
+	return &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) == 0 {
+				return newError("wrong number of arguments. got=%d, want= >0", nil, len(args))
+			}
+
+			var out []string
+			for _, arg := range args {
+				out = append(out, arg.Inspect())
+			}
+			fmt.Println(out)
+			return NULL
 		},
 	}
 }
