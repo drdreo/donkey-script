@@ -272,18 +272,23 @@ func evalArrayIndexExpression(arr object.Object, idx object.Object, loc *token.T
 	ao, ok := arr.(*object.Array)
 	if !ok {
 		return newError("type mismatch for array index operation. got=%s", loc, arr.Type())
-
 	}
 
 	i := idx.(*object.Integer).Value
-	length := int64(len(ao.Elements) - 1)
+	maxIdx := int64(len(ao.Elements) - 1)
 
-	// TODO: support negative index to go from the back - [-3]
-	if i < 0 || i > length {
+	// check upper boundary for positive and negative index
+	// [1,2,3][3] || [1,2,3][-4]
+	if i > maxIdx || -i > maxIdx+1 {
 		return NULL
 	}
 
-	return ao.Elements[i]
+	access := i
+	// support access from back [1,2,3][-1] --> 3
+	if i < 0 {
+		access += maxIdx + 1
+	}
+	return ao.Elements[access]
 }
 
 func evalHashIndexExpression(hash object.Object, idx object.Object, loc *token.TokenLocation) object.Object {

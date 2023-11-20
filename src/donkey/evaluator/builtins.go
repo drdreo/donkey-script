@@ -119,6 +119,8 @@ func builtinPush() *object.Builtin {
 
 			newElements := make([]object.Object, length+1)
 			copy(newElements, arr.Elements)
+			newElements[length] = args[1]
+
 			return &object.Array{Elements: newElements}
 		},
 	}
