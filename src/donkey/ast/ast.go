@@ -136,6 +136,7 @@ func (es *ExpressionStatement) String() string {
 type BlockStatement struct {
 	Token      token.Token // the '{' token
 	Statements []Statement
+	Async      bool // if the block is colored as async
 }
 
 func (bs *BlockStatement) statementNode() {}

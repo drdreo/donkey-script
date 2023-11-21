@@ -127,6 +127,27 @@ func evalProgram(stmts []ast.Statement, env *object.Environment) object.Object {
 }
 
 func evalBlockStatement(block *ast.BlockStatement, env *object.Environment) object.Object {
+	if block.Async {
+		go func() {
+			var res object.Object
+			for _, stmt := range block.Statements {
+				res = Eval(stmt, env)
+
+				if res != nil {
+					rt := res.Type()
+					if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ {
+						fmt.Printf("Async function tried to return. %s TODO message\n", res)
+					}
+				}
+			}
+
+			if res != nil {
+				fmt.Println("Async function tried to return via expression. TODO message")
+			}
+		}()
+		return NULL
+	}
+
 	var res object.Object
 
 	for _, stmt := range block.Statements {
