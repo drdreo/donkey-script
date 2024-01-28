@@ -22,6 +22,7 @@ const (
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
 	ERROR_OBJ        = "ERROR"
 	BUILTIN_OBJ      = "BUILTIN"
+	QUOTE_OBJ        = "QUOTE"
 )
 
 type Error struct {
@@ -211,3 +212,10 @@ func (b *Builtin) Type() ObjectType {
 func (b *Builtin) Inspect() string {
 	return "builtin function"
 }
+
+type Quote struct {
+	Node ast.Node
+}
+
+func (q *Quote) Type() ObjectType { return QUOTE_OBJ }
+func (q *Quote) Inspect() string  { return "QUOTE(" + q.Node.String() + ")" }

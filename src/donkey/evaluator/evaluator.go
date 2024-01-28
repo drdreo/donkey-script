@@ -15,7 +15,7 @@ var (
 	NULL  = &object.Null{}
 )
 
-// TODO: potentially replace passing the location around with a context instead
+// TODO: potentially replace passing the location around with a context (containing the location) instead
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 
@@ -72,6 +72,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.Identifier:
 		return evalIdentifier(node, env)
 	case *ast.CallExpression:
+		if isQuoteCall(node) {
+			return quote(node.Arguments[0], env)
+		}
+
 		fn := Eval(node.Function, env)
 		if isError(fn) {
 			return fn
