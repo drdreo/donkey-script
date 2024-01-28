@@ -43,6 +43,7 @@ const (
 	RETURN   = "RETURN"
 	TRUE     = "TRUE"
 	FALSE    = "FALSE"
+	ASYNC    = "ASYNC"
 )
 
 type TokenType string
@@ -66,6 +67,7 @@ var keywords = map[string]TokenType{
 	"return": RETURN,
 	"true":   TRUE,
 	"false":  FALSE,
+	"async":  ASYNC,
 }
 
 func LookupIdent(ident string) TokenType {

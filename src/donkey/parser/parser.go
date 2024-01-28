@@ -66,7 +66,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.STRING, p.parseStringLiteral)
 	p.registerPrefixFn(token.TRUE, p.parseBooleanLiteral)
 	p.registerPrefixFn(token.FALSE, p.parseBooleanLiteral)
-	p.registerPrefixFn(token.FUNCTION, p.parseFunctionLiteral)
+	p.registerPrefixFn(token.FUNCTION, func() ast.Expression { return p.parseFunctionLiteral(false) })
 	p.registerPrefixFn(token.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefixFn(token.LBRACE, p.parseHashLiteral)
 
@@ -75,6 +75,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.LPAREN, p.parseGroupedExpression)
 
 	p.registerPrefixFn(token.IF, p.parseIfExpression)
+	p.registerPrefixFn(token.ASYNC, p.parseAsyncExpression)
 
 	// INFIX functions
 	p.registerInfixFn(token.PLUS, p.parseInfixExpression)
@@ -196,8 +197,8 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	return stmt
 }
 
-func (p *Parser) parseBlockStatement() *ast.BlockStatement {
-	blckStmt := &ast.BlockStatement{Token: p.curToken}
+func (p *Parser) parseBlockStatement(async bool) *ast.BlockStatement {
+	blckStmt := &ast.BlockStatement{Token: p.curToken, Async: async}
 	blckStmt.Statements = []ast.Statement{}
 
 	p.nextToken()
@@ -309,7 +310,7 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 	return hash
 }
 
-func (p *Parser) parseFunctionLiteral() ast.Expression {
+func (p *Parser) parseFunctionLiteral(async bool) ast.Expression {
 	defer untrace(trace("parseFunctionLiteral"))
 
 	exp := &ast.FunctionLiteral{Token: p.curToken}
@@ -324,7 +325,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		return nil
 	}
 
-	exp.Body = p.parseBlockStatement()
+	exp.Body = p.parseBlockStatement(async)
 	return exp
 }
 
@@ -392,7 +393,7 @@ func (p *Parser) parseIfExpression() ast.Expression {
 		return nil
 	}
 
-	exp.Consequence = p.parseBlockStatement()
+	exp.Consequence = p.parseBlockStatement(false)
 
 	if p.peekTokenIs(token.ELSE) {
 		p.nextToken()
@@ -400,10 +401,18 @@ func (p *Parser) parseIfExpression() ast.Expression {
 		if !p.expectPeek(token.LBRACE) {
 			return nil
 		}
-		exp.Alternative = p.parseBlockStatement()
+		exp.Alternative = p.parseBlockStatement(false)
 	}
 
 	return exp
+}
+
+func (p *Parser) parseAsyncExpression() ast.Expression {
+	if !p.expectPeek(token.FUNCTION) {
+		return nil
+	}
+
+	return p.parseFunctionLiteral(true)
 }
 
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {

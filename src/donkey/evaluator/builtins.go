@@ -147,7 +147,7 @@ func builtinFetch() *object.Builtin {
 
 			switch arg := args[0].(type) {
 			case *object.String:
-				resp, err := http.Get(arg.Value)
+				resp, err := http.Get(arg.Value) // HTTP GET request
 				if err != nil {
 					return newError("`fetch` request failed, got=%s", nil, err)
 				}

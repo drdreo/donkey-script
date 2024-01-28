@@ -294,6 +294,14 @@ func TestFunctionApplication(t *testing.T) {
 	}
 }
 
+func TestAsyncFunction(t *testing.T) {
+	input := "async fn(x) { x; }(5)"
+
+	evaluated := testEval(input)
+
+	testNullObject(t, evaluated)
+}
+
 func TestEnclosingEnvironments(t *testing.T) {
 	input := `
 let first = 10;
