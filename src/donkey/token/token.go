@@ -43,7 +43,9 @@ const (
 	RETURN   = "RETURN"
 	TRUE     = "TRUE"
 	FALSE    = "FALSE"
+	FOR      = "FOR" // TODO; implement loops
 	ASYNC    = "ASYNC"
+	MACRO    = "MACRO"
 )
 
 type TokenType string
@@ -67,6 +69,8 @@ var keywords = map[string]TokenType{
 	"return": RETURN,
 	"true":   TRUE,
 	"false":  FALSE,
+	"for":    FOR,
+	"macro":  MACRO,
 	"async":  ASYNC,
 }
 

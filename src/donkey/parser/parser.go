@@ -67,6 +67,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.TRUE, p.parseBooleanLiteral)
 	p.registerPrefixFn(token.FALSE, p.parseBooleanLiteral)
 	p.registerPrefixFn(token.FUNCTION, func() ast.Expression { return p.parseFunctionLiteral(false) })
+	p.registerPrefixFn(token.MACRO, p.parseMacroLiteral)
 	p.registerPrefixFn(token.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefixFn(token.LBRACE, p.parseHashLiteral)
 
@@ -313,20 +314,40 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 func (p *Parser) parseFunctionLiteral(async bool) ast.Expression {
 	defer untrace(trace("parseFunctionLiteral"))
 
-	exp := &ast.FunctionLiteral{Token: p.curToken}
+	lit := &ast.FunctionLiteral{Token: p.curToken}
 
 	if !p.expectPeek(token.LPAREN) {
 		return nil
 	}
 
-	exp.Parameters = p.parseFunctionParameters()
+	lit.Parameters = p.parseFunctionParameters()
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
 
-	exp.Body = p.parseBlockStatement(async)
-	return exp
+	lit.Body = p.parseBlockStatement(async)
+	return lit
+}
+
+func (p *Parser) parseMacroLiteral() ast.Expression {
+	defer untrace(trace("parseFunctionLiteral"))
+
+	lit := &ast.MacroLiteral{Token: p.curToken}
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+
+	lit.Parameters = p.parseFunctionParameters()
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	lit.Body = p.parseBlockStatement(false)
+
+	return lit
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {

@@ -36,6 +36,7 @@ func evalUnquoteCalls(quoted ast.Node, env *object.Environment) ast.Node {
 
 func convertObjectToASTNode(obj object.Object) ast.Node {
 	// TODO: add more type support
+	// TODO: creating new nodes on the fly could lose original token info (location, etc.)
 	switch obj := obj.(type) {
 	case *object.Integer:
 		t := token.Token{
