@@ -14,6 +14,7 @@ import (
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment()
+	macroEnv := object.NewEnvironment()
 
 	for {
 		fmt.Fprintf(out, constants.ReplPrompt)
@@ -33,7 +34,11 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaled := evaluator.Eval(program, env)
+		// support macros in REPL
+		evaluator.DefineMacros(program, macroEnv)
+		expanded := evaluator.ExpandMacros(program, macroEnv)
+
+		evaled := evaluator.Eval(expanded, env)
 		if evaled != nil {
 			io.WriteString(out, evaled.Inspect())
 			io.WriteString(out, "\n")

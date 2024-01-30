@@ -13,6 +13,7 @@ type ObjectType string
 
 const (
 	FUNCTION_OBJ     = "FUNCTION"
+	MACRO_OBJ        = "MACRO"
 	INTEGER_OBJ      = "INTEGER"
 	STRING_OBJ       = "STRING"
 	BOOLEAN_OBJ      = "BOOLEAN"
@@ -22,6 +23,7 @@ const (
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
 	ERROR_OBJ        = "ERROR"
 	BUILTIN_OBJ      = "BUILTIN"
+	QUOTE_OBJ        = "QUOTE"
 )
 
 type Error struct {
@@ -198,6 +200,31 @@ func (f *Function) Inspect() string {
 	return out.String()
 }
 
+type Macro struct {
+	Parameters []*ast.Identifier
+	Body       *ast.BlockStatement
+	Env        *Environment
+}
+
+func (m *Macro) Type() ObjectType { return MACRO_OBJ }
+func (m *Macro) Inspect() string {
+	var out bytes.Buffer
+
+	var params []string
+	for _, p := range m.Parameters {
+		params = append(params, p.String())
+	}
+
+	out.WriteString("macro")
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(") {\n")
+	out.WriteString(m.Body.String())
+	out.WriteString("\n}")
+
+	return out.String()
+}
+
 type BuiltinFunction func(args ...Object) Object
 
 type Builtin struct {
@@ -211,3 +238,10 @@ func (b *Builtin) Type() ObjectType {
 func (b *Builtin) Inspect() string {
 	return "builtin function"
 }
+
+type Quote struct {
+	Node ast.Node
+}
+
+func (q *Quote) Type() ObjectType { return QUOTE_OBJ }
+func (q *Quote) Inspect() string  { return "QUOTE(" + q.Node.String() + ")" }
