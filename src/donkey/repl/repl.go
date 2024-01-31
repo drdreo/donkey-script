@@ -34,7 +34,6 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		// support macros in REPL
 		evaluator.DefineMacros(program, macroEnv)
 		expanded := evaluator.ExpandMacros(program, macroEnv)
 

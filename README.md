@@ -39,4 +39,4 @@ Then comes the parser and turns the tokens into an AST.
 Afterwards, macros are processed and expand the AST.
 Finally, `Eval` takes this AST and evaluates its nodes recursively, statement by statement, expression by expression.
 
-Lexing, parsing (macro expansion) and evaluation -- strings to tokens, tokens to AST, macro expansion, AST to output.
+Lexing, parsing (macro expansion), import resolution, and evaluation -- strings to tokens, tokens to AST, macro expansion, AST to output.

@@ -22,6 +22,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	// Statements
 	case *ast.Program:
 		return evalProgram(node.Statements, env)
+
+	case *ast.ImportStatement:
+		// maybe???
+		return evalImportStatement(node, env)
 	case *ast.LetStatement:
 		val := Eval(node.Value, env)
 		if isError(val) {
@@ -112,6 +116,29 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	}
 
 	return nil
+}
+
+func evalImportStatement(node *ast.ImportStatement, env *object.Environment) object.Object {
+	path := node.PathValue
+
+	// Load the module
+	// This might involve finding the file, reading its contents, and then parsing and executing it
+	// Depending on your language's design, you might also need to handle relative paths, file extensions, etc.
+	importedModule, err := loadAndExecuteModule(path, env)
+	if err != nil {
+		return newError("error importing file '%s': %s", &node.Token.Location, path, err.Message)
+
+	}
+
+	// Depending on how you want to handle the scope, you may merge the exported symbols from the imported module into the current environment
+	// This is a simplified example; your actual implementation might be more complex
+	//	mergeModuleSymbolsIntoEnv(env, importedModule)
+
+	return nil // Or some appropriate value indicating successful import
+}
+
+func loadAndExecuteModule(path string, env *object.Environment) (*object.Object, *object.Error) {
+	// This function is responsible for finding the module file, reading its content, parsing it into an AST, and then evaluating it.
 }
 
 func evalProgram(stmts []ast.Statement, env *object.Environment) object.Object {
