@@ -77,6 +77,46 @@ func TestReturnStatements(t *testing.T) {
 	}
 }
 
+func TestImportStatements(t *testing.T) {
+	tests := []struct {
+		input         string
+		expectedValue interface{}
+	}{
+		{"import \"file.dk\"", "file.dk"},
+		{"import \"../file.dk\"", "../file.dk"},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain 1 statements. got=%d",
+				len(program.Statements))
+		}
+
+		stmt := program.Statements[0]
+		importStmt, ok := stmt.(*ast.ImportStatement)
+		if !ok {
+			t.Fatalf("stmt not *ast.ImportStatement. got=%T", stmt)
+		}
+		if importStmt.TokenLiteral() != "import" {
+			t.Fatalf("importStmt.TokenLiteral not 'import', got %q", importStmt.TokenLiteral())
+		}
+
+		lit, ok := importStmt.PathValue.(*ast.StringLiteral)
+		if !ok {
+			t.Fatalf("path not *ast.StringLiteral. got=%T", lit)
+		}
+
+		if lit.Value != tt.expectedValue {
+			t.Errorf("literal.Value not %q. got=%q", tt.expectedValue, lit.Value)
+		}
+	}
+}
+
 func TestIdentifierExpression(t *testing.T) {
 	input := "foobar;"
 

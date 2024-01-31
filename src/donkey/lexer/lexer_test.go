@@ -32,6 +32,7 @@ if (5 < 10) {
 [1, 2];
 {"foo": "bar"}
 macro(x, y) { x + y; };
+import "file.dk";
 `
 
 	tests := []struct {
@@ -136,6 +137,9 @@ macro(x, y) { x + y; };
 		{token.IDENT, "y"},
 		{token.SEMICOLON, ";"},
 		{token.RBRACE, "}"},
+		{token.SEMICOLON, ";"},
+		{token.IMPORT, "import"},
+		{token.STRING, "file.dk"},
 		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}

@@ -154,6 +154,32 @@ func (bs *BlockStatement) String() string {
 	return out.String()
 }
 
+// ImportStatement
+// ------------
+type ImportStatement struct {
+	Token     token.Token // token.IMPORT
+	PathValue Expression
+}
+
+func (is *ImportStatement) statementNode() {}
+func (is *ImportStatement) TokenLiteral() string {
+	return is.Token.Literal
+}
+
+func (is *ImportStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(is.TokenLiteral() + " ")
+
+	if is.PathValue != nil {
+		out.WriteString(is.PathValue.String())
+	}
+
+	out.WriteString(";")
+
+	return out.String()
+}
+
 // BooleanLiteral
 // -------------
 type BooleanLiteral struct {

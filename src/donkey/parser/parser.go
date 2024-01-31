@@ -436,6 +436,23 @@ func (p *Parser) parseAsyncExpression() ast.Expression {
 	return p.parseFunctionLiteral(true)
 }
 
+func (p *Parser) parseImportStatement() *ast.ImportStatement {
+	stmt := &ast.ImportStatement{Token: p.curToken}
+
+	if !p.expectPeek(token.STRING) {
+		return nil
+	}
+
+	stmt.PathValue = p.parseStringLiteral()
+
+	// Optionally, advance past the semicolon or statement terminator
+	//	if !p.expectPeek(token.SEMICOLON) {
+	//		return nil
+	//	}
+
+	return stmt
+}
+
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
 	exp.Arguments = p.parseExpressionList(token.RPAREN)
@@ -516,6 +533,8 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
+	case token.IMPORT:
+		return p.parseImportStatement()
 	case token.LET:
 		return p.parseLetStatement()
 	case token.RETURN:

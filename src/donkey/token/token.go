@@ -46,6 +46,7 @@ const (
 	FOR      = "FOR" // TODO; implement loops
 	ASYNC    = "ASYNC"
 	MACRO    = "MACRO"
+	IMPORT   = "IMPORT"
 )
 
 type TokenType string
@@ -72,6 +73,7 @@ var keywords = map[string]TokenType{
 	"for":    FOR,
 	"macro":  MACRO,
 	"async":  ASYNC,
+	"import": IMPORT,
 }
 
 func LookupIdent(ident string) TokenType {
