@@ -32,11 +32,23 @@ runnings test coverage
 
 ## Background
 
-### Routine
+### Interpreter
 We interpret Donkey source code in a series of steps.
 First comes the lexer which turns source code it into tokens.
 Then comes the parser and turns the tokens into an AST.
 Afterwards, macros are processed and expand the AST.
 Finally, `Eval` takes this AST and evaluates its nodes recursively, statement by statement, expression by expression.
 
-Lexing, parsing (macro expansion) and evaluation -- strings to tokens, tokens to AST, macro expansion, AST to output.
+#### Flow
+Lexing, parsing (macro expansion) and evaluation
+
+String --> Tokens --> AST --> Macro Expansion  --> Objects (output)
+
+### Compiler
+As the virtual machine, a stack machine was chosen over registers.
+Why? Easier to grasp and build.
+
+#### Flow
+Lexer --> Parser --> Compiler --> Virtual Machine
+
+String --> Tokens --> AST --> Bytecode --> Objects

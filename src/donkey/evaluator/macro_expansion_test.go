@@ -5,6 +5,7 @@ import (
 	"donkey/lexer"
 	"donkey/object"
 	"donkey/parser"
+	"donkey/utils"
 	"testing"
 )
 
@@ -101,8 +102,8 @@ unless(10 > 5, print("not greater"), print("greater"));
 	}
 
 	for _, tt := range tests {
-		expected := testParseProgram(tt.expected)
-		program := testParseProgram(tt.input)
+		expected := utils.ParseProgram(tt.expected)
+		program := utils.ParseProgram(tt.input)
 
 		env := object.NewEnvironment()
 		DefineMacros(program, env)
@@ -113,10 +114,4 @@ unless(10 > 5, print("not greater"), print("greater"));
 				expected.String(), expanded.String())
 		}
 	}
-}
-
-func testParseProgram(input string) *ast.Program {
-	l := lexer.New(input)
-	p := parser.New(l)
-	return p.ParseProgram()
 }
