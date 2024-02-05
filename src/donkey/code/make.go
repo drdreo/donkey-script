@@ -42,6 +42,7 @@ func ReadOperands(def *Definition, ins Instructions) ([]int, int) {
 		case 2:
 			operands[i] = int(ReadUint16(ins[offset:]))
 		}
+		offset += width
 	}
 
 	return operands, offset
