@@ -22,6 +22,7 @@ func TestIntegerArithmetic(t *testing.T) {
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
 				code.Make(code.OpConstant, 1),
+				code.Make(code.OpAdd),
 			},
 		},
 	}
@@ -82,7 +83,7 @@ func testInstructions(
 
 	for i, ins := range concatted {
 		if actual[i] != ins {
-			return fmt.Errorf("wrong instruction at %d.\nwant=%q\ngot =%q",
+			return fmt.Errorf("wrong instruction at %d.\nwant=%s\ngot =%s",
 				i, concatted, actual)
 		}
 	}
