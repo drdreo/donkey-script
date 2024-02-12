@@ -2,10 +2,10 @@ package repl
 
 import (
 	"bufio"
+	"donkey/compiler"
+	"donkey/compiler/vm"
 	"donkey/constants"
-	"donkey/evaluator"
 	"donkey/lexer"
-	"donkey/object"
 	"donkey/parser"
 	"fmt"
 	"io"
@@ -13,8 +13,8 @@ import (
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-	env := object.NewEnvironment()
-	macroEnv := object.NewEnvironment()
+	//	env := object.NewEnvironment()
+	//	macroEnv := object.NewEnvironment()
 
 	for {
 		fmt.Fprintf(out, constants.ReplPrompt)
@@ -34,20 +34,50 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		// support macros in REPL
-		evaluator.DefineMacros(program, macroEnv)
-		expanded := evaluator.ExpandMacros(program, macroEnv)
-
-		evaled := evaluator.Eval(expanded, env)
-		if evaled != nil {
-			io.WriteString(out, evaled.Inspect())
-			io.WriteString(out, "\n")
+		// COMPILER section
+		comp := compiler.New()
+		err := comp.Compile(program)
+		if err != nil {
+			printCompilerErrors(out, []string{err.Error()})
+			continue
 		}
+
+		machine := vm.New(comp.Bytecode())
+		err = machine.Run()
+
+		if err != nil {
+			printCompilerErrors(out, []string{fmt.Sprintf("Bytecode execution failed:\n%s\n", err)})
+			continue
+		}
+
+		stackTop := machine.StackTop()
+		io.WriteString(out, stackTop.Inspect())
+		io.WriteString(out, "\n")
+
+		// ----
+		// EVAL section
+
+		// support macros in REPL
+		//		evaluator.DefineMacros(program, macroEnv)
+		//		expanded := evaluator.ExpandMacros(program, macroEnv)
+		//
+		//		evaled := evaluator.Eval(expanded, env)
+		//		if evaled != nil {
+		//			io.WriteString(out, evaled.Inspect())
+		//			io.WriteString(out, "\n")
+		//		}
 	}
 }
 
 func printParserErrors(out io.Writer, errors []string) {
 	io.WriteString(out, constants.ParserErrorPrompt)
+	for _, msg := range errors {
+		io.WriteString(out, "\t"+msg+"\n")
+	}
+}
+
+func printCompilerErrors(out io.Writer, errors []string) {
+	io.WriteString(out, constants.CompilerErrorPrompt)
 	for _, msg := range errors {
 		io.WriteString(out, "\t"+msg+"\n")
 	}

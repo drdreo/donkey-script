@@ -2,7 +2,7 @@ package compiler
 
 import (
 	"donkey/ast"
-	"donkey/code"
+	"donkey/compiler/code"
 	"donkey/object"
 	"fmt"
 )

@@ -1,8 +1,8 @@
 package vm
 
 import (
-	"donkey/code"
 	"donkey/compiler"
+	"donkey/compiler/code"
 	"donkey/object"
 	"fmt"
 )

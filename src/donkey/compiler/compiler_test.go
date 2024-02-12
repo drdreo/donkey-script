@@ -1,7 +1,7 @@
 package compiler
 
 import (
-	"donkey/code"
+	"donkey/compiler/code"
 	"donkey/object"
 	"donkey/utils"
 	"fmt"
