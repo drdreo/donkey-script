@@ -47,6 +47,17 @@ func (vm *VM) Run() error {
 				return err
 			}
 
+		case code.OpBang:
+			err := vm.executeBangOperator()
+			if err != nil {
+				return err
+			}
+
+		case code.OpMinus:
+			err := vm.executeMinusOperator()
+			if err != nil {
+				return err
+			}
 		case code.OpTrue:
 			err := vm.push(True)
 			if err != nil {
@@ -65,7 +76,7 @@ func (vm *VM) Run() error {
 				return err
 			}
 
-		case code.OpAdd, code.OpMinus, code.OpMult, code.OpDivide:
+		case code.OpAdd, code.OpSubtract, code.OpMult, code.OpDivide:
 			err := vm.executeBinaryOperation(op)
 			if err != nil {
 				return err
@@ -97,7 +108,7 @@ func (vm *VM) executeBinaryIntegerOperation(op code.Opcode, left, right object.O
 	switch op {
 	case code.OpAdd:
 		result = leftValue + rightValue
-	case code.OpMinus:
+	case code.OpSubtract:
 		result = leftValue - rightValue
 	case code.OpMult:
 		result = leftValue * rightValue
@@ -172,4 +183,27 @@ func (vm *VM) pop() object.Object {
 	obj := vm.stack[vm.sp-1]
 	vm.sp--
 	return obj
+}
+
+func (vm *VM) executeBangOperator() error {
+	operand := vm.pop()
+	switch operand {
+	case True:
+		return vm.push(False)
+	case False:
+		return vm.push(True)
+	default:
+		return vm.push(False)
+	}
+}
+
+func (vm *VM) executeMinusOperator() error {
+	operand := vm.pop()
+
+	if operand.Type() != object.INTEGER_OBJ {
+		return fmt.Errorf("unsupported type for negation: %s", operand.Type())
+	}
+
+	value := operand.(*object.Integer).Value
+	return vm.push(&object.Integer{Value: -value})
 }

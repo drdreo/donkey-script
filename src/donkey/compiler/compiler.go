@@ -47,6 +47,20 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.emit(code.OpPop)
 
+	case *ast.PrefixExpression:
+		err := c.Compile(node.Right)
+		if err != nil {
+			return err
+		}
+		switch node.Operator {
+		case "!":
+			c.emit(code.OpBang)
+		case "-":
+			c.emit(code.OpMinus)
+		default:
+			return fmt.Errorf("unknown operator %s", node.Operator)
+		}
+
 	case *ast.InfixExpression:
 		var leftNode = node.Left
 		var rightNode = node.Right
@@ -70,7 +84,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		case "+":
 			c.emit(code.OpAdd)
 		case "-":
-			c.emit(code.OpMinus)
+			c.emit(code.OpSubtract)
 		case "*":
 			c.emit(code.OpMult)
 		case "/":

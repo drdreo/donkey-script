@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"donkey/compiler/code"
+	"donkey/constants"
 	"donkey/object"
 	"donkey/utils"
 	"fmt"
@@ -42,7 +43,7 @@ func TestIntegerArithmetic(t *testing.T) {
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
 				code.Make(code.OpConstant, 1),
-				code.Make(code.OpMinus),
+				code.Make(code.OpSubtract),
 				code.Make(code.OpPop),
 			},
 		},
@@ -66,15 +67,15 @@ func TestIntegerArithmetic(t *testing.T) {
 				code.Make(code.OpPop),
 			},
 		},
-		//		{
-		//			input:             "-1",
-		//			expectedConstants: []interface{}{1},
-		//			expectedInstructions: []code.Instructions{
-		//				code.Make(code.OpConstant, 0),
-		//				code.Make(code.OpMinus),
-		//				code.Make(code.OpPop),
-		//			},
-		//		},
+		{
+			input:             "-1",
+			expectedConstants: []interface{}{1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpMinus),
+				code.Make(code.OpPop),
+			},
+		},
 	}
 
 	runCompilerTests(t, tests)
@@ -188,15 +189,15 @@ func TestBooleanExpressions(t *testing.T) {
 				code.Make(code.OpPop),
 			},
 		},
-		//		{
-		//			input:             "!true",
-		//			expectedConstants: []interface{}{},
-		//			expectedInstructions: []code.Instructions{
-		//				code.Make(code.OpTrue),
-		//				code.Make(code.OpBang),
-		//				code.Make(code.OpPop),
-		//			},
-		//		},
+		{
+			input:             "!true",
+			expectedConstants: []interface{}{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpTrue),
+				code.Make(code.OpBang),
+				code.Make(code.OpPop),
+			},
+		},
 	}
 
 	runCompilerTests(t, tests)
@@ -222,12 +223,12 @@ func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 
 		err = testInstructions(tt.expectedInstructions, bytecode.Instructions)
 		if err != nil {
-			t.Fatalf("'%s' - testInstructions failed: %s", tt.input, err)
+			t.Fatalf("%s - testInstructions failed: %s", constants.Blue(tt.input), err)
 		}
 
 		err = testConstants(t, tt.expectedConstants, bytecode.Constants)
 		if err != nil {
-			t.Fatalf("'%s' - testConstants failed: %s", tt.input, err)
+			t.Fatalf("%s - testConstants failed: %s", constants.Blue(tt.input), err)
 		}
 	}
 }
@@ -249,13 +250,13 @@ func testInstructions(
 	concatted := concatInstructions(expected)
 
 	if len(actual) != len(concatted) {
-		return fmt.Errorf("wrong instructions length.\nwant=\n%s\ngot =\n%s",
+		return fmt.Errorf(constants.Red("wrong instructions length.")+"\nwant=\n%s\ngot =\n%s",
 			concatted, actual)
 	}
 
 	for i, ins := range concatted {
 		if actual[i] != ins {
-			return fmt.Errorf("wrong instruction at %d.\nwant=%s\ngot =%s",
+			return fmt.Errorf(constants.Red("wrong instruction at %d.")+"\nwant=%s\ngot =%s",
 				i, concatted, actual)
 		}
 	}
@@ -283,6 +284,8 @@ func testConstants(
 	expected []interface{},
 	actual []object.Object,
 ) error {
+	t.Helper()
+
 	if len(expected) != len(actual) {
 		return fmt.Errorf("wrong number of constants. got=%d, want=%d",
 			len(actual), len(expected))

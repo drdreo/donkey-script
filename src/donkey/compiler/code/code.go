@@ -9,16 +9,23 @@ const (
 	OpConstant Opcode = iota
 	OpPop
 
+	// Globals
 	OpTrue
 	OpFalse
 
+	// Prefix operators
+	OpMinus
+	OpBang
+
+	//Comparison
 	OpEqual
 	OpNotEqual
 	OpGreaterThan
 	OpGreaterThanOrEqual
 
+	// Arithmetics
 	OpAdd
-	OpMinus
+	OpSubtract
 	OpMult
 	OpDivide
 )
@@ -77,15 +84,18 @@ var definitions = map[Opcode]*Definition{
 	OpTrue:  {"OpTrue", []int{}},
 	OpFalse: {"OpFalse", []int{}},
 
+	OpMinus: {"OpMinus", []int{}},
+	OpBang:  {"OpBang", []int{}},
+
 	OpEqual:              {"OpEqual", []int{}},
 	OpNotEqual:           {"OpNotEqual", []int{}},
 	OpGreaterThan:        {"OpGreaterThan", []int{}},
 	OpGreaterThanOrEqual: {"OpGreaterThanOrEqual", []int{}},
 
-	OpAdd:    {"OpAdd", []int{}},
-	OpMinus:  {"OpMinus", []int{}},
-	OpMult:   {"OpMult", []int{}},
-	OpDivide: {"OpDivide", []int{}},
+	OpAdd:      {"OpAdd", []int{}},
+	OpSubtract: {"OpSubtract", []int{}},
+	OpMult:     {"OpMult", []int{}},
+	OpDivide:   {"OpDivide", []int{}},
 }
 
 func Lookup(op byte) (*Definition, error) {

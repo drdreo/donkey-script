@@ -29,6 +29,10 @@ func TestIntegerArithmetic(t *testing.T) {
 		{"5 * 2 + 10", 20},
 		{"5 + 2 * 10", 25},
 		{"5 * (2 + 10)", 60},
+		{"-5", -5},
+		{"-10", -10},
+		{"-50 + 100 + -50", 0},
+		{"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
 	}
 
 	runVmTests(t, tests)
@@ -61,6 +65,13 @@ func TestBooleanExpressions(t *testing.T) {
 		{"(1 > 2) == true", false},
 		{"(1 > 2) == false", true},
 		{"(1 >= 2) == false", true},
+		{"!true", false},
+		{"!false", true},
+		{"!5", false},
+		{"!!true", true},
+		{"!!false", false},
+		{"!!5", true},
+		{"!(1 >= 1)", false},
 	}
 
 	runVmTests(t, tests)
@@ -105,13 +116,13 @@ func testExpectedObject(
 	case int:
 		err := testIntegerObject(int64(expected), actual)
 		if err != nil {
-			t.Errorf("%s - testIntegerObject failed: %s", constants.Blue(tC.input), err)
+			t.Errorf("testIntegerObject failed: %s - %s", err, constants.Blue(tC.input))
 		}
 
 	case bool:
 		err := testBooleanObject(bool(expected), actual)
 		if err != nil {
-			t.Errorf("%s - testBooleanObject failed: %s", constants.Blue(tC.input), err)
+			t.Errorf("testBooleanObject failed: %s - %s", err, constants.Blue(tC.input))
 		}
 	}
 }
@@ -119,12 +130,12 @@ func testExpectedObject(
 func testIntegerObject(expected int64, actual object.Object) error {
 	result, ok := actual.(*object.Integer)
 	if !ok {
-		return fmt.Errorf("object is not Integer. got=%T (%+v)",
+		return fmt.Errorf(constants.Red("object is not Integer.")+" got=%T (%+v)",
 			actual, actual)
 	}
 
 	if result.Value != expected {
-		return fmt.Errorf("object has wrong value. got=%d, want=%d",
+		return fmt.Errorf(constants.Red("object has wrong value.")+" got=%d, want=%d",
 			result.Value, expected)
 	}
 
@@ -134,12 +145,12 @@ func testIntegerObject(expected int64, actual object.Object) error {
 func testBooleanObject(expected bool, actual object.Object) error {
 	result, ok := actual.(*object.Boolean)
 	if !ok {
-		return fmt.Errorf(constants.Red("object is not Boolean.")+"got = %T( % +v)",
+		return fmt.Errorf(constants.Red("object is not Boolean.")+" got = %T( % +v)",
 			actual, actual)
 	}
 
 	if result.Value != expected {
-		return fmt.Errorf(constants.Red("object has wrong value.")+"got=%t, want=%t",
+		return fmt.Errorf(constants.Red("object has wrong value.")+" got=%t, want=%t",
 			result.Value, expected)
 	}
 
