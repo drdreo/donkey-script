@@ -2,6 +2,7 @@ package vm
 
 import (
 	"donkey/compiler"
+	"donkey/constants"
 	"donkey/object"
 	"donkey/utils"
 	"fmt"
@@ -33,6 +34,38 @@ func TestIntegerArithmetic(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestBooleanExpressions(t *testing.T) {
+	tests := []vmTestCase{
+		{"true", true},
+		{"false", false},
+		{"1 < 2", true},
+		{"1 > 2", false},
+		{"1 < 1", false},
+		{"1 > 1", false},
+		{"1 == 1", true},
+		{"1 != 1", false},
+		{"1 == 2", false},
+		{"1 != 2", true},
+		{"1 <= 2", true},
+		{"1 <= 1", true},
+		{"1 >= 1", true},
+		{"1 >= 2", false},
+		{"true == true", true},
+		{"true == 1", false},
+		{"false == false", true},
+		{"true == false", false},
+		{"true != false", true},
+		{"false != true", true},
+		{"(1 < 2) == true", true},
+		{"(1 < 2) == false", false},
+		{"(1 > 2) == true", false},
+		{"(1 > 2) == false", true},
+		{"(1 >= 2) == false", true},
+	}
+
+	runVmTests(t, tests)
+}
+
 /**
 TEST HELPRS
 **/
@@ -57,22 +90,28 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 
 		stackElem := vm.LastPoppedStackElem()
 
-		testExpectedObject(t, tt.expected, stackElem)
+		testExpectedObject(t, tt, stackElem)
 	}
 }
 
 func testExpectedObject(
 	t *testing.T,
-	expected interface{},
+	tC vmTestCase,
 	actual object.Object,
 ) {
 	t.Helper()
 
-	switch expected := expected.(type) {
+	switch expected := tC.expected.(type) {
 	case int:
 		err := testIntegerObject(int64(expected), actual)
 		if err != nil {
-			t.Errorf("testIntegerObject failed: %s", err)
+			t.Errorf("%s - testIntegerObject failed: %s", constants.Blue(tC.input), err)
+		}
+
+	case bool:
+		err := testBooleanObject(bool(expected), actual)
+		if err != nil {
+			t.Errorf("%s - testBooleanObject failed: %s", constants.Blue(tC.input), err)
 		}
 	}
 }
@@ -86,6 +125,21 @@ func testIntegerObject(expected int64, actual object.Object) error {
 
 	if result.Value != expected {
 		return fmt.Errorf("object has wrong value. got=%d, want=%d",
+			result.Value, expected)
+	}
+
+	return nil
+}
+
+func testBooleanObject(expected bool, actual object.Object) error {
+	result, ok := actual.(*object.Boolean)
+	if !ok {
+		return fmt.Errorf(constants.Red("object is not Boolean.")+"got = %T( % +v)",
+			actual, actual)
+	}
+
+	if result.Value != expected {
+		return fmt.Errorf(constants.Red("object has wrong value.")+"got=%t, want=%t",
 			result.Value, expected)
 	}
 

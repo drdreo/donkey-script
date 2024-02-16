@@ -8,6 +8,10 @@ runnings test coverage
 `go test -coverpkg=./... ./...`
 
 
+## Features
+
+ - `< > == != <= >=` operators are supported
+
 ## Error Handling
 
 [x] added line and column numbers

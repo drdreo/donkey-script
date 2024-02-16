@@ -48,12 +48,20 @@ func (c *Compiler) Compile(node ast.Node) error {
 		c.emit(code.OpPop)
 
 	case *ast.InfixExpression:
-		err := c.Compile(node.Left)
+		var leftNode = node.Left
+		var rightNode = node.Right
+
+		if reorderExpression(node.Operator) {
+			leftNode = node.Right
+			rightNode = node.Left
+		}
+
+		err := c.Compile(leftNode)
 		if err != nil {
 			return err
 		}
 
-		err = c.Compile(node.Right)
+		err = c.Compile(rightNode)
 		if err != nil {
 			return err
 		}
@@ -67,6 +75,15 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(code.OpMult)
 		case "/":
 			c.emit(code.OpDivide)
+
+		case "==":
+			c.emit(code.OpEqual)
+		case "!=":
+			c.emit(code.OpNotEqual)
+		case ">", "<":
+			c.emit(code.OpGreaterThan)
+		case ">=", "<=":
+			c.emit(code.OpGreaterThanOrEqual)
 		default:
 			return fmt.Errorf("unknown operator %s", node.Operator)
 		}
@@ -74,6 +91,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(integer))
+	case *ast.BooleanLiteral:
+		op := code.OpFalse
+		if node.Value {
+			op = code.OpTrue
+		}
+		c.emit(op)
 	}
 	return nil
 }
@@ -93,4 +116,8 @@ func (c *Compiler) addInstruction(ins []byte) int {
 func (c *Compiler) addConstant(obj object.Object) int {
 	c.constants = append(c.constants, obj)
 	return len(c.constants) - 1
+}
+
+func reorderExpression(operator string) bool {
+	return operator == "<" || operator == "<="
 }
