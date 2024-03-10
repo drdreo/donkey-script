@@ -77,6 +77,20 @@ func TestBooleanExpressions(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestConditionals(t *testing.T) {
+	tests := []vmTestCase{
+		{"if (true) { 10 }", 10},
+		{"if (true) { 10 } else { 20 }", 10},
+		{"if (false) { 10 } else { 20 } ", 20},
+		{"if (1) { 10 }", 10},
+		{"if (1 < 2) { 10 }", 10},
+		{"if (1 < 2) { 10 } else { 20 }", 10},
+		{"if (1 > 2) { 10 } else { 20 }", 20},
+	}
+
+	runVmTests(t, tests)
+}
+
 /**
 TEST HELPRS
 **/
@@ -90,7 +104,7 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 		comp := compiler.New()
 		err := comp.Compile(program)
 		if err != nil {
-			t.Fatalf("compiler error: %s", err)
+			t.Fatalf("'%s' - compiler error: %s", tt.input, err)
 		}
 
 		vm := New(comp.Bytecode())
@@ -116,13 +130,13 @@ func testExpectedObject(
 	case int:
 		err := testIntegerObject(int64(expected), actual)
 		if err != nil {
-			t.Errorf("testIntegerObject failed: %s - %s", err, constants.Blue(tC.input))
+			t.Fatalf("%s - testIntegerObject failed: %s", constants.Blue(tC.input), err)
 		}
 
 	case bool:
 		err := testBooleanObject(bool(expected), actual)
 		if err != nil {
-			t.Errorf("testBooleanObject failed: %s - %s", err, constants.Blue(tC.input))
+			t.Fatalf("%s - testBooleanObject failed: %s", constants.Blue(tC.input), err)
 		}
 	}
 }
