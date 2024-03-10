@@ -203,6 +203,31 @@ func TestBooleanExpressions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestConditionals(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input:             `if(true){ 10 }; 3333;`,
+			expectedConstants: []interface{}{10, 3333},
+			expectedInstructions: []code.Instructions{
+				// 0000
+				code.Make(code.OpTrue),
+				// 0001
+				code.Make(code.OpJumpNotTruthy, 7),
+				// 0004
+				code.Make(code.OpConstant, 0),
+				// 0007
+				code.Make(code.OpPop),
+				// 0008
+				code.Make(code.OpConstant, 1),
+				// 0011
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 // ---------------------
 // HELPERS
 // ---------------------
@@ -250,13 +275,13 @@ func testInstructions(
 	concatted := concatInstructions(expected)
 
 	if len(actual) != len(concatted) {
-		return fmt.Errorf(constants.Red("wrong instructions length.")+"\nwant=\n%s\ngot =\n%s",
+		return fmt.Errorf(constants.Red("wrong instructions length.")+"\nwant:\n%s\ngot:\n%s",
 			concatted, actual)
 	}
 
 	for i, ins := range concatted {
 		if actual[i] != ins {
-			return fmt.Errorf(constants.Red("wrong instruction at %d.")+"\nwant=%s\ngot =%s",
+			return fmt.Errorf(constants.Red("wrong instruction at %d.")+"\nwant:%s\ngot:%s",
 				i, concatted, actual)
 		}
 	}

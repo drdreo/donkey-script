@@ -9,6 +9,9 @@ const (
 	OpConstant Opcode = iota
 	OpPop
 
+	OpJump
+	OpJumpNotTruthy
+
 	// Globals
 	OpTrue
 	OpFalse
@@ -80,6 +83,9 @@ type Definition struct {
 var definitions = map[Opcode]*Definition{
 	OpConstant: {"OpConstant", []int{2}},
 	OpPop:      {"OpPop", []int{}},
+
+	OpJump:          {"OpJump", []int{2}},
+	OpJumpNotTruthy: {"OpJumpNotTruthy", []int{2}},
 
 	OpTrue:  {"OpTrue", []int{}},
 	OpFalse: {"OpFalse", []int{}},
