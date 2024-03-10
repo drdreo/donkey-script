@@ -1,10 +1,7 @@
 package evaluator
 
 import (
-	"donkey/ast"
-	"donkey/lexer"
 	"donkey/object"
-	"donkey/parser"
 	"donkey/utils"
 	"testing"
 )
@@ -17,7 +14,7 @@ let mymacro = macro(x, y) { x + y; };
 `
 
 	env := object.NewEnvironment()
-	program := testParseProgram(input)
+	program := utils.ParseProgram(input)
 
 	DefineMacros(program, env)
 

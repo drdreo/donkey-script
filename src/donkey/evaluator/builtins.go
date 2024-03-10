@@ -2,6 +2,7 @@ package evaluator
 
 import (
 	"donkey/object"
+	"donkey/utils"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -21,7 +22,7 @@ func builtinLen() *object.Builtin {
 	return &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
-				return newError("wrong number of arguments. got=%d, want=1", nil, len(args))
+				return utils.NewError("wrong number of arguments. got=%d, want=1", nil, len(args))
 			}
 
 			switch arg := args[0].(type) {
@@ -32,7 +33,7 @@ func builtinLen() *object.Builtin {
 				return &object.Integer{Value: int64(len(arg.Elements))}
 
 			default:
-				return newError("argument to `len` not supported, got=%s", nil, args[0].Type())
+				return utils.NewError("argument to `len` not supported, got=%s", nil, args[0].Type())
 			}
 		},
 	}
@@ -42,11 +43,11 @@ func builtinFirst() *object.Builtin {
 	return &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
-				return newError("wrong number of arguments. got=%d, want=1", nil, len(args))
+				return utils.NewError("wrong number of arguments. got=%d, want=1", nil, len(args))
 			}
 
 			if args[0].Type() != object.ARRAY_OBJ {
-				return newError("argument to `first` must be ARRAY, got=%s", nil, args[0].Type())
+				return utils.NewError("argument to `first` must be ARRAY, got=%s", nil, args[0].Type())
 			}
 
 			arr := args[0].(*object.Array)
@@ -63,11 +64,11 @@ func builtinLast() *object.Builtin {
 	return &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
-				return newError("wrong number of arguments. got=%d, want=1", nil, len(args))
+				return utils.NewError("wrong number of arguments. got=%d, want=1", nil, len(args))
 			}
 
 			if args[0].Type() != object.ARRAY_OBJ {
-				return newError("argument to `last` must be ARRAY, got=%s", nil, args[0].Type())
+				return utils.NewError("argument to `last` must be ARRAY, got=%s", nil, args[0].Type())
 			}
 
 			arr := args[0].(*object.Array)
@@ -85,10 +86,10 @@ func builtinRest() *object.Builtin {
 	return &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
-				return newError("wrong number of arguments. got=%d, want=1", nil, len(args))
+				return utils.NewError("wrong number of arguments. got=%d, want=1", nil, len(args))
 			}
 			if args[0].Type() != object.ARRAY_OBJ {
-				return newError("argument to `rest` must be ARRAY, got %s", nil, args[0].Type())
+				return utils.NewError("argument to `rest` must be ARRAY, got %s", nil, args[0].Type())
 			}
 
 			arr := args[0].(*object.Array)
@@ -108,10 +109,10 @@ func builtinPush() *object.Builtin {
 	return &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 2 {
-				return newError("wrong number of arguments. got=%d, want=2", nil, len(args))
+				return utils.NewError("wrong number of arguments. got=%d, want=2", nil, len(args))
 			}
 			if args[0].Type() != object.ARRAY_OBJ {
-				return newError("argument to `push` must be ARRAY, got %s", nil, args[0].Type())
+				return utils.NewError("argument to `push` must be ARRAY, got %s", nil, args[0].Type())
 			}
 
 			arr := args[0].(*object.Array)
@@ -142,25 +143,25 @@ func builtinFetch() *object.Builtin {
 	return &object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
-				return newError("wrong number of arguments. got=%d, want=1", nil, len(args))
+				return utils.NewError("wrong number of arguments. got=%d, want=1", nil, len(args))
 			}
 
 			switch arg := args[0].(type) {
 			case *object.String:
 				resp, err := http.Get(arg.Value) // HTTP GET request
 				if err != nil {
-					return newError("`fetch` request failed, got=%s", nil, err)
+					return utils.NewError("`fetch` request failed, got=%s", nil, err)
 				}
 				defer resp.Body.Close()
 				body, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
-					return newError("error reading response body, got=%s", nil, err)
+					return utils.NewError("error reading response body, got=%s", nil, err)
 				}
 
 				return &object.String{Value: string(body)}
 
 			default:
-				return newError("argument to `fetch` not supported, got=%s", nil, args[0].Type())
+				return utils.NewError("argument to `fetch` not supported, got=%s", nil, args[0].Type())
 			}
 		},
 	}

@@ -148,17 +148,16 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.removeLastInstruction()
 		}
 
-		// no else-block
+		// Emit an `OpJump` with a garbage vlaue, back-patched
+		jumpPos := c.emit(code.OpJump, 9999)
+
+		afterConsequencePos := len(c.instructions)
+		c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
+
+		// no else-block, emit a NULL instead
 		if node.Alternative == nil {
-			afterConsequencePos := len(c.instructions)
-			c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
+			c.emit(code.OpNull)
 		} else {
-			// Emit an `OpJump` with a garbage vlaue, back-patched
-			jumpPos := c.emit(code.OpJump, 9999)
-
-			afterConsequencePos := len(c.instructions)
-			c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
-
 			err = c.Compile(node.Alternative)
 			if err != nil {
 				return err
@@ -167,10 +166,10 @@ func (c *Compiler) Compile(node ast.Node) error {
 			if c.isLastInstruction(code.OpPop) {
 				c.removeLastInstruction()
 			}
-
-			afterAlternativePos := len(c.instructions)
-			c.changeOperand(jumpPos, afterAlternativePos)
 		}
+
+		afterAlternativePos := len(c.instructions)
+		c.changeOperand(jumpPos, afterAlternativePos)
 
 	}
 	return nil
