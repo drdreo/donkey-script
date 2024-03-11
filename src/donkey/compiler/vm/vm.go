@@ -9,6 +9,7 @@ import (
 )
 
 const StackSize = 2048
+const GlobalSize = 65536
 
 var True = &object.Boolean{Value: true}
 var False = &object.Boolean{Value: false}
@@ -17,6 +18,7 @@ var Null = &object.Null{}
 type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
+	globals      []object.Object
 
 	stack []object.Object
 	sp    int // always points to the next value. Top of stack is stack[sp-1]
@@ -26,6 +28,7 @@ func New(bytecode *compiler.Bytecode) *VM {
 	return &VM{
 		instructions: bytecode.Instructions,
 		constants:    bytecode.Constants,
+		globals:      make([]object.Object, GlobalSize),
 
 		stack: make([]object.Object, StackSize),
 		sp:    0,
@@ -66,6 +69,21 @@ func (vm *VM) Run() error {
 			condition := vm.pop()
 			if !utils.IsTruthy(condition) {
 				ip = pos - 1
+			}
+
+		case code.OpSetGlobal:
+			globalIdx := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+
+			vm.globals[globalIdx] = vm.pop()
+
+		case code.OpGetGlobal:
+			globalIdx := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+
+			err := vm.push(vm.globals[globalIdx])
+			if err != nil {
+				return err
 			}
 
 		case code.OpBang:
