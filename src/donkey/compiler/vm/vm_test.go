@@ -2,7 +2,7 @@ package vm
 
 import (
 	"donkey/compiler"
-	"donkey/constants"
+	"donkey/constant"
 	"donkey/object"
 	"donkey/utils"
 	"fmt"
@@ -144,18 +144,18 @@ func testExpectedObject(
 	case int:
 		err := testIntegerObject(int64(expected), actual)
 		if err != nil {
-			t.Fatalf("%s - testIntegerObject failed: %s", constants.Blue(tC.input), err)
+			t.Fatalf("%s - testIntegerObject failed: %s", constant.Blue(tC.input), err)
 		}
 
 	case bool:
 		err := testBooleanObject(bool(expected), actual)
 		if err != nil {
-			t.Fatalf("%s - testBooleanObject failed: %s", constants.Blue(tC.input), err)
+			t.Fatalf("%s - testBooleanObject failed: %s", constant.Blue(tC.input), err)
 		}
 
 	case *object.Null:
 		if actual != Null {
-			t.Fatalf("%s - object is not Null: %T (%+v)", constants.Blue(tC.input), actual, actual)
+			t.Fatalf("%s - object is not Null: %T (%+v)", constant.Blue(tC.input), actual, actual)
 		}
 	}
 }
@@ -163,12 +163,12 @@ func testExpectedObject(
 func testIntegerObject(expected int64, actual object.Object) error {
 	result, ok := actual.(*object.Integer)
 	if !ok {
-		return fmt.Errorf(constants.Red("object is not Integer.")+" got=%T (%+v)",
+		return fmt.Errorf(constant.Red("object is not Integer.")+" got=%T (%+v)",
 			actual, actual)
 	}
 
 	if result.Value != expected {
-		return fmt.Errorf(constants.Red("object has wrong value.")+" got=%d, want=%d",
+		return fmt.Errorf(constant.Red("object has wrong value.")+" got=%d, want=%d",
 			result.Value, expected)
 	}
 
@@ -178,12 +178,12 @@ func testIntegerObject(expected int64, actual object.Object) error {
 func testBooleanObject(expected bool, actual object.Object) error {
 	result, ok := actual.(*object.Boolean)
 	if !ok {
-		return fmt.Errorf(constants.Red("object is not Boolean.")+" got = %T( % +v)",
+		return fmt.Errorf(constant.Red("object is not Boolean.")+" got = %T( % +v)",
 			actual, actual)
 	}
 
 	if result.Value != expected {
-		return fmt.Errorf(constants.Red("object has wrong value.")+" got=%t, want=%t",
+		return fmt.Errorf(constant.Red("object has wrong value.")+" got=%t, want=%t",
 			result.Value, expected)
 	}
 

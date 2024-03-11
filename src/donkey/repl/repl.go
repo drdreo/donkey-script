@@ -3,9 +3,11 @@ package repl
 import (
 	"bufio"
 	"donkey/compiler"
+	"donkey/compiler/symbol"
 	"donkey/compiler/vm"
-	"donkey/constants"
+	"donkey/constant"
 	"donkey/lexer"
+	"donkey/object"
 	"donkey/parser"
 	"fmt"
 	"io"
@@ -13,11 +15,17 @@ import (
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	// 	EVAL envs
 	//	env := object.NewEnvironment()
 	//	macroEnv := object.NewEnvironment()
 
+	// COMPILER envs
+	constants := []object.Object{}
+	globals := make([]object.Object, vm.GlobalSize)
+	symbolTable := symbol.NewSymbolTable()
+
 	for {
-		fmt.Fprintf(out, constants.ReplPrompt)
+		fmt.Fprintf(out, constant.ReplPrompt)
 		scanned := scanner.Scan()
 		if !scanned {
 			return
@@ -35,16 +43,18 @@ func Start(in io.Reader, out io.Writer) {
 		}
 
 		// COMPILER section
-		comp := compiler.New()
+		comp := compiler.NewWithState(symbolTable, constants)
 		err := comp.Compile(program)
 		if err != nil {
 			printCompilerErrors(out, []string{err.Error()})
 			continue
 		}
 
-		machine := vm.New(comp.Bytecode())
-		err = machine.Run()
+		code := comp.Bytecode()
+		//	huh?	constants = code.Constants
+		machine := vm.NewWithGlobalState(code, globals)
 
+		err = machine.Run()
 		if err != nil {
 			printCompilerErrors(out, []string{fmt.Sprintf("Bytecode execution failed:\n%s\n", err)})
 			continue
@@ -70,14 +80,14 @@ func Start(in io.Reader, out io.Writer) {
 }
 
 func printParserErrors(out io.Writer, errors []string) {
-	io.WriteString(out, constants.ParserErrorPrompt)
+	io.WriteString(out, constant.ParserErrorPrompt)
 	for _, msg := range errors {
 		io.WriteString(out, "\t"+msg+"\n")
 	}
 }
 
 func printCompilerErrors(out io.Writer, errors []string) {
-	io.WriteString(out, constants.CompilerErrorPrompt)
+	io.WriteString(out, constant.CompilerErrorPrompt)
 	for _, msg := range errors {
 		io.WriteString(out, "\t"+msg+"\n")
 	}

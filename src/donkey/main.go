@@ -1,7 +1,7 @@
 package main
 
 import (
-	"donkey/constants"
+	"donkey/constant"
 	"donkey/repl"
 	"fmt"
 	"os"
@@ -14,7 +14,7 @@ func main() {
 		panic(err)
 	}
 	fmt.Printf("Hello %s! This is the %s programming language!\n",
-		userr.Username, constants.LangName)
+		userr.Username, constant.LangName)
 	fmt.Printf("Feel free to type in commands\n")
 
 	repl.Start(os.Stdin, os.Stdout)

@@ -36,6 +36,14 @@ func New() *Compiler {
 	}
 }
 
+func NewWithState(s *symbol.SymbolTable, constants []object.Object) *Compiler {
+	// re-allocation is fine, i guess?
+	compiler := New()
+	compiler.symbolTable = s
+	compiler.constants = constants
+	return compiler
+}
+
 func (c *Compiler) Bytecode() *Bytecode {
 	return &Bytecode{
 		Instructions: c.instructions,

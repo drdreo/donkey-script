@@ -2,7 +2,7 @@ package compiler
 
 import (
 	"donkey/compiler/code"
-	"donkey/constants"
+	"donkey/constant"
 	"donkey/object"
 	"donkey/utils"
 	"fmt"
@@ -323,12 +323,12 @@ func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 
 		err = testInstructions(tt.expectedInstructions, bytecode.Instructions)
 		if err != nil {
-			t.Fatalf("%s - testInstructions failed: %s", constants.Blue(tt.input), err)
+			t.Fatalf("%s - testInstructions failed: %s", constant.Blue(tt.input), err)
 		}
 
 		err = testConstants(t, tt.expectedConstants, bytecode.Constants)
 		if err != nil {
-			t.Fatalf("%s - testConstants failed: %s", constants.Blue(tt.input), err)
+			t.Fatalf("%s - testConstants failed: %s", constant.Blue(tt.input), err)
 		}
 	}
 }
@@ -350,13 +350,13 @@ func testInstructions(
 	concatted := concatInstructions(expected)
 
 	if len(actual) != len(concatted) {
-		return fmt.Errorf(constants.Red("wrong instructions length.")+"\nwant:\n%s\ngot:\n%s",
+		return fmt.Errorf(constant.Red("wrong instructions length.")+"\nwant:\n%s\ngot:\n%s",
 			concatted, actual)
 	}
 
 	for i, ins := range concatted {
 		if actual[i] != ins {
-			return fmt.Errorf(constants.Red("wrong instruction at %d.", i)+"\nwant:\n%s\ngot:\n%s",
+			return fmt.Errorf(constant.Red("wrong instruction at %d.", i)+"\nwant:\n%s\ngot:\n%s",
 				concatted, actual)
 		}
 	}
@@ -387,7 +387,7 @@ func testConstants(
 	t.Helper()
 
 	if len(expected) != len(actual) {
-		return fmt.Errorf("wrong number of constants. got=%d, want=%d",
+		return fmt.Errorf("wrong number of constant. got=%d, want=%d",
 			len(actual), len(expected))
 	}
 
