@@ -3,6 +3,7 @@ package compiler
 import (
 	"donkey/ast"
 	"donkey/compiler/code"
+	"donkey/compiler/symbol"
 	"donkey/object"
 	"fmt"
 )
@@ -12,11 +13,17 @@ type EmittedInstruction struct {
 	Position int
 }
 
+type Bytecode struct {
+	Instructions code.Instructions
+	Constants    []object.Object
+}
+
 type Compiler struct {
 	instructions    code.Instructions
 	lastInstruction EmittedInstruction
 	prevInstruction EmittedInstruction
 	constants       []object.Object
+	symbolTable     *symbol.SymbolTable
 }
 
 func New() *Compiler {
@@ -25,6 +32,7 @@ func New() *Compiler {
 		constants:       []object.Object{},
 		lastInstruction: EmittedInstruction{},
 		prevInstruction: EmittedInstruction{},
+		symbolTable:     symbol.NewSymbolTable(),
 	}
 }
 
@@ -33,11 +41,6 @@ func (c *Compiler) Bytecode() *Bytecode {
 		Instructions: c.instructions,
 		Constants:    c.constants,
 	}
-}
-
-type Bytecode struct {
-	Instructions code.Instructions
-	Constants    []object.Object
 }
 
 func (c *Compiler) Compile(node ast.Node) error {
@@ -49,12 +52,21 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return err
 			}
 		}
+
 	case *ast.ExpressionStatement:
 		err := c.Compile(node.Expression)
 		if err != nil {
 			return err
 		}
 		c.emit(code.OpPop)
+
+	case *ast.LetStatement:
+		err := c.Compile(node.Value)
+		if err != nil {
+			return err
+		}
+		sym := c.symbolTable.Define(node.Name.Value)
+		c.emit(code.OpSetGlobal, sym.Index)
 
 	case *ast.BlockStatement:
 		for _, s := range node.Statements {
@@ -119,17 +131,6 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("unknown operator %s", node.Operator)
 		}
 
-	case *ast.IntegerLiteral:
-		integer := &object.Integer{Value: node.Value}
-		c.emit(code.OpConstant, c.addConstant(integer))
-
-	case *ast.BooleanLiteral:
-		op := code.OpFalse
-		if node.Value {
-			op = code.OpTrue
-		}
-		c.emit(op)
-
 	case *ast.IfExpression:
 		err := c.Compile(node.Condition)
 		if err != nil {
@@ -171,6 +172,23 @@ func (c *Compiler) Compile(node ast.Node) error {
 		afterAlternativePos := len(c.instructions)
 		c.changeOperand(jumpPos, afterAlternativePos)
 
+	case *ast.IntegerLiteral:
+		integer := &object.Integer{Value: node.Value}
+		c.emit(code.OpConstant, c.addConstant(integer))
+
+	case *ast.BooleanLiteral:
+		op := code.OpFalse
+		if node.Value {
+			op = code.OpTrue
+		}
+		c.emit(op)
+
+	case *ast.Identifier:
+		sym, ok := c.symbolTable.Resolve(node.Value)
+		if !ok {
+			return fmt.Errorf("undefined variable %s", node.Value)
+		}
+		c.emit(code.OpGetGlobal, sym.Index)
 	}
 	return nil
 }
