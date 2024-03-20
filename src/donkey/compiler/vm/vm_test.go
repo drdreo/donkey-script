@@ -2,7 +2,6 @@ package vm
 
 import (
 	"donkey/compiler"
-	"donkey/constant"
 	"donkey/object"
 	"donkey/utils"
 	"fmt"
@@ -105,6 +104,18 @@ func TestGlobalLetStatements(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestStringExpression(t *testing.T) {
+	tests := []vmTestCase{
+		{`"donkey"`, "donkey"},
+		{`"don" + "key"`, "donkey"},
+		{`"don" + "key" + " kong"`, "donkey kong"},
+		{`"donkey" - "key"`, "don"},
+		{`"donkey kong" - "d" - " "`, "onkeykong"},
+	}
+
+	runVmTests(t, tests)
+}
+
 /**
 TEST HELPRS
 **/
@@ -118,13 +129,13 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 		comp := compiler.New()
 		err := comp.Compile(program)
 		if err != nil {
-			t.Fatalf("'%s' - compiler error: %s", tt.input, err)
+			t.Fatalf(utils.Blue("'%s'", tt.input) + utils.Red(" - Compiler Error: %s", err))
 		}
 
 		vm := New(comp.Bytecode())
 		err = vm.Run()
 		if err != nil {
-			t.Fatalf("vm error: %s", err)
+			t.Fatalf(utils.Blue("'%s'", tt.input) + utils.Red(" - VM Error: %s", err))
 		}
 
 		stackElem := vm.LastPoppedStackElem()
@@ -144,18 +155,24 @@ func testExpectedObject(
 	case int:
 		err := testIntegerObject(int64(expected), actual)
 		if err != nil {
-			t.Fatalf("%s - testIntegerObject failed: %s", constant.Blue(tC.input), err)
+			t.Fatalf("%s - testIntegerObject failed: %s", utils.Blue(tC.input), err)
 		}
 
 	case bool:
-		err := testBooleanObject(bool(expected), actual)
+		err := testBooleanObject(expected, actual)
 		if err != nil {
-			t.Fatalf("%s - testBooleanObject failed: %s", constant.Blue(tC.input), err)
+			t.Fatalf("%s - testBooleanObject failed: %s", utils.Blue(tC.input), err)
+		}
+
+	case string:
+		err := testStringObject(expected, actual)
+		if err != nil {
+			t.Fatalf("%s - testStringObject failed: %s", utils.Blue(tC.input), err)
 		}
 
 	case *object.Null:
 		if actual != Null {
-			t.Fatalf("%s - object is not Null: %T (%+v)", constant.Blue(tC.input), actual, actual)
+			t.Fatalf("%s - object is not Null: %T (%+v)", utils.Blue(tC.input), actual, actual)
 		}
 	}
 }
@@ -163,12 +180,12 @@ func testExpectedObject(
 func testIntegerObject(expected int64, actual object.Object) error {
 	result, ok := actual.(*object.Integer)
 	if !ok {
-		return fmt.Errorf(constant.Red("object is not Integer.")+" got=%T (%+v)",
+		return fmt.Errorf(utils.Red("object is not Integer.")+" got=%T (%+v)",
 			actual, actual)
 	}
 
 	if result.Value != expected {
-		return fmt.Errorf(constant.Red("object has wrong value.")+" got=%d, want=%d",
+		return fmt.Errorf(utils.Red("object has wrong value.")+" got=%d, want=%d",
 			result.Value, expected)
 	}
 
@@ -178,12 +195,27 @@ func testIntegerObject(expected int64, actual object.Object) error {
 func testBooleanObject(expected bool, actual object.Object) error {
 	result, ok := actual.(*object.Boolean)
 	if !ok {
-		return fmt.Errorf(constant.Red("object is not Boolean.")+" got = %T( % +v)",
+		return fmt.Errorf(utils.Red("object is not Boolean.")+" got = %T( % +v)",
 			actual, actual)
 	}
 
 	if result.Value != expected {
-		return fmt.Errorf(constant.Red("object has wrong value.")+" got=%t, want=%t",
+		return fmt.Errorf(utils.Red("object has wrong value.")+" got=%t, want=%t",
+			result.Value, expected)
+	}
+
+	return nil
+}
+
+func testStringObject(expected string, actual object.Object) error {
+	result, ok := actual.(*object.String)
+	if !ok {
+		return fmt.Errorf(utils.Red("object is not String.")+" got = %T( % +v)",
+			actual, actual)
+	}
+
+	if result.Value != expected {
+		return fmt.Errorf(utils.Red("object has wrong value.")+" got=%q, want=%q",
 			result.Value, expected)
 	}
 

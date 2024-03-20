@@ -5,7 +5,6 @@ import (
 	"donkey/compiler"
 	"donkey/compiler/symbol"
 	"donkey/compiler/vm"
-	"donkey/constant"
 	"donkey/lexer"
 	"donkey/object"
 	"donkey/parser"
@@ -25,7 +24,7 @@ func Start(in io.Reader, out io.Writer) {
 	symbolTable := symbol.NewSymbolTable()
 
 	for {
-		fmt.Fprintf(out, constant.ReplPrompt)
+		fmt.Fprintf(out, "\u001b[33m💡 >> \u001b[0m")
 		scanned := scanner.Scan()
 		if !scanned {
 			return
@@ -51,7 +50,7 @@ func Start(in io.Reader, out io.Writer) {
 		}
 
 		code := comp.Bytecode()
-		//	huh?	constants = code.Constants
+		//	needed?	constants = code.Constants
 		machine := vm.NewWithGlobalState(code, globals)
 
 		err = machine.Run()
@@ -80,14 +79,14 @@ func Start(in io.Reader, out io.Writer) {
 }
 
 func printParserErrors(out io.Writer, errors []string) {
-	io.WriteString(out, constant.ParserErrorPrompt)
+	io.WriteString(out, "🚨 parser errors:\n")
 	for _, msg := range errors {
 		io.WriteString(out, "\t"+msg+"\n")
 	}
 }
 
 func printCompilerErrors(out io.Writer, errors []string) {
-	io.WriteString(out, constant.CompilerErrorPrompt)
+	io.WriteString(out, "🚨 compiler errors:\n")
 	for _, msg := range errors {
 		io.WriteString(out, "\t"+msg+"\n")
 	}

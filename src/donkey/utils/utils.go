@@ -10,6 +10,22 @@ import (
 	"donkey/token"
 )
 
+const (
+	colorRed   = "\033[31m"
+	colorBlue  = "\033[34m"
+	colorReset = "\033[0m"
+)
+
+const LangName = "donkey"
+
+func Blue(text string, args ...interface{}) string {
+	return fmt.Sprintf(colorBlue+text+colorReset, args...)
+}
+
+func Red(text string, args ...interface{}) string {
+	return fmt.Sprintf(colorRed+text+colorReset, args...)
+}
+
 func ParseProgram(input string) *ast.Program {
 	l := lexer.New(input)
 	p := parser.New(l)
