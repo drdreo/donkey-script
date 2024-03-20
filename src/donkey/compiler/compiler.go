@@ -180,6 +180,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 		afterAlternativePos := len(c.instructions)
 		c.changeOperand(jumpPos, afterAlternativePos)
 
+	case *ast.BooleanLiteral:
+		op := code.OpFalse
+		if node.Value {
+			op = code.OpTrue
+		}
+		c.emit(op)
+
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(integer))
@@ -188,12 +195,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 		str := &object.String{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(str))
 
-	case *ast.BooleanLiteral:
-		op := code.OpFalse
-		if node.Value {
-			op = code.OpTrue
+	case *ast.ArrayLiteral:
+		for _, el := range node.Elements {
+			err := c.Compile(el)
+			if err != nil {
+				return err
+			}
 		}
-		c.emit(op)
+		c.emit(code.OpArray, len(node.Elements))
 
 	case *ast.Identifier:
 		sym, ok := c.symbolTable.Resolve(node.Value)

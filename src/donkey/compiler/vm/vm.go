@@ -127,6 +127,18 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+
+		case code.OpArray:
+			length := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			arr := vm.buildArray(vm.sp-length, vm.sp)
+			vm.sp -= length
+
+			err := vm.push(arr)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -276,4 +288,13 @@ func (vm *VM) executeMinusOperator() error {
 
 	value := operand.(*object.Integer).Value
 	return vm.push(&object.Integer{Value: -value})
+}
+
+func (vm *VM) buildArray(startIdx int, endIdx int) object.Object {
+	elements := make([]object.Object, endIdx-startIdx)
+
+	for i := range endIdx - startIdx {
+		elements[i] = vm.stack[i+startIdx]
+	}
+	return &object.Array{Elements: elements}
 }

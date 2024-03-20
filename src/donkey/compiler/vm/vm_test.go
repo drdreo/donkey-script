@@ -116,6 +116,16 @@ func TestStringExpression(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestArrayLiterals(t *testing.T) {
+	tests := []vmTestCase{
+		{`[]`, []int{}},
+		{`[1,2,3]`, []int{1, 2, 3}},
+		{`[1+2, (3-4), 5*5]`, []int{3, -1, 25}},
+	}
+
+	runVmTests(t, tests)
+}
+
 /**
 TEST HELPRS
 **/
@@ -170,6 +180,12 @@ func testExpectedObject(
 			t.Fatalf("%s - testStringObject failed: %s", utils.Blue(tC.input), err)
 		}
 
+	case []int:
+		err := testIntArrayObject(expected, actual)
+		if err != nil {
+			t.Fatalf("%s - testIntArrayObject failed: %s", utils.Blue(tC.input), err)
+		}
+
 	case *object.Null:
 		if actual != Null {
 			t.Fatalf("%s - object is not Null: %T (%+v)", utils.Blue(tC.input), actual, actual)
@@ -195,7 +211,7 @@ func testIntegerObject(expected int64, actual object.Object) error {
 func testBooleanObject(expected bool, actual object.Object) error {
 	result, ok := actual.(*object.Boolean)
 	if !ok {
-		return fmt.Errorf(utils.Red("object is not Boolean.")+" got = %T( % +v)",
+		return fmt.Errorf(utils.Red("object is not Boolean.")+" got = %T(%+v)",
 			actual, actual)
 	}
 
@@ -210,13 +226,35 @@ func testBooleanObject(expected bool, actual object.Object) error {
 func testStringObject(expected string, actual object.Object) error {
 	result, ok := actual.(*object.String)
 	if !ok {
-		return fmt.Errorf(utils.Red("object is not String.")+" got = %T( % +v)",
+		return fmt.Errorf(utils.Red("object is not String.")+" got = %T(%+v)",
 			actual, actual)
 	}
 
 	if result.Value != expected {
 		return fmt.Errorf(utils.Red("object has wrong value.")+" got=%q, want=%q",
 			result.Value, expected)
+	}
+
+	return nil
+}
+
+func testIntArrayObject(expected []int, actual object.Object) error {
+	arr, ok := actual.(*object.Array)
+	if !ok {
+		return fmt.Errorf(utils.Red("object is not Array")+" got = %T(%+v)",
+			actual, actual)
+	}
+
+	if len(arr.Elements) != len(expected) {
+		return fmt.Errorf(utils.Red("array has wrong length.")+" got=%d, want=%d",
+			len(arr.Elements), len(expected))
+	}
+
+	for i, expectedEl := range expected {
+		err := testIntegerObject(int64(expectedEl), arr.Elements[i])
+		if err != nil {
+			return fmt.Errorf("testIntegerObject failed: %s", err)
+		}
 	}
 
 	return nil
