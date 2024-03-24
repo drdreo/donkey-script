@@ -3,6 +3,7 @@ package object
 import (
 	"bytes"
 	"donkey/ast"
+	"donkey/compiler/code"
 	"donkey/token"
 	"fmt"
 	"hash/fnv"
@@ -12,18 +13,19 @@ import (
 type ObjectType string
 
 const (
-	FUNCTION_OBJ     = "FUNCTION"
-	MACRO_OBJ        = "MACRO"
-	INTEGER_OBJ      = "INTEGER"
-	STRING_OBJ       = "STRING"
-	BOOLEAN_OBJ      = "BOOLEAN"
-	ARRAY_OBJ        = "ARRAY"
-	HASH_OBJ         = "HASH"
-	NULL_OBJ         = "NULL"
-	RETURN_VALUE_OBJ = "RETURN_VALUE"
-	ERROR_OBJ        = "ERROR"
-	BUILTIN_OBJ      = "BUILTIN"
-	QUOTE_OBJ        = "QUOTE"
+	FUNCTION_OBJ          = "FUNCTION"
+	COMPILED_FUNCTION_OBJ = "COMPILED_FUNCTION"
+	MACRO_OBJ             = "MACRO"
+	INTEGER_OBJ           = "INTEGER"
+	STRING_OBJ            = "STRING"
+	BOOLEAN_OBJ           = "BOOLEAN"
+	ARRAY_OBJ             = "ARRAY"
+	HASH_OBJ              = "HASH"
+	NULL_OBJ              = "NULL"
+	RETURN_VALUE_OBJ      = "RETURN_VALUE"
+	ERROR_OBJ             = "ERROR"
+	BUILTIN_OBJ           = "BUILTIN"
+	QUOTE_OBJ             = "QUOTE"
 )
 
 type Error struct {
@@ -198,6 +200,17 @@ func (f *Function) Inspect() string {
 	out.WriteString("\n")
 
 	return out.String()
+}
+
+type CompiledFunction struct {
+	Instructions code.Instructions
+}
+
+func (f *CompiledFunction) Type() ObjectType {
+	return COMPILED_FUNCTION_OBJ
+}
+func (f *CompiledFunction) Inspect() string {
+	return fmt.Sprintf("CompiledFunction[%p]", f)
 }
 
 type Macro struct {

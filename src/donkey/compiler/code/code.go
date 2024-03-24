@@ -8,15 +8,21 @@ import (
 const (
 	OpConstant Opcode = iota
 	OpPop
-	OpNull
 
 	OpJump
 	OpJumpNotTruthy
+
+	// Access
+	OpIndex
+	OpCall
+	OpReturn
+	OpReturnValue
 
 	OpGetGlobal
 	OpSetGlobal
 
 	// Globals
+	OpNull
 	OpTrue
 	OpFalse
 
@@ -39,8 +45,6 @@ const (
 	// Datastructure
 	OpArray
 	OpHash
-
-	OpIndex
 )
 
 type Instructions []byte
@@ -93,7 +97,11 @@ type Definition struct {
 var definitions = map[Opcode]*Definition{
 	OpConstant: {"OpConstant", []int{2}},
 	OpPop:      {"OpPop", []int{}},
-	OpNull:     {"OpNull", []int{}},
+
+	OpCall:        {"OpCall", []int{}},
+	OpReturn:      {"OpReturn", []int{}},
+	OpReturnValue: {"OpReturnValue", []int{}},
+	OpIndex:       {"OpIndex", []int{}},
 
 	OpGetGlobal: {"OpGetGlobal", []int{2}},
 	OpSetGlobal: {"OpSetGlobal", []int{2}},
@@ -101,6 +109,7 @@ var definitions = map[Opcode]*Definition{
 	OpJump:          {"OpJump", []int{2}},
 	OpJumpNotTruthy: {"OpJumpNotTruthy", []int{2}},
 
+	OpNull:  {"OpNull", []int{}},
 	OpTrue:  {"OpTrue", []int{}},
 	OpFalse: {"OpFalse", []int{}},
 
@@ -119,8 +128,6 @@ var definitions = map[Opcode]*Definition{
 
 	OpArray: {"OpArray", []int{2}},
 	OpHash:  {"OpHash", []int{2}},
-
-	OpIndex: {"OpIndex", []int{}},
 }
 
 func Lookup(op byte) (*Definition, error) {

@@ -4,7 +4,6 @@ import (
 	"donkey/ast"
 	"donkey/object"
 	"donkey/token"
-	"donkey/utils"
 	"fmt"
 	"strings"
 )
@@ -25,7 +24,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalProgram(node.Statements, env)
 	case *ast.LetStatement:
 		val := Eval(node.Value, env)
-		if utils.IsError(val) {
+		if object.IsError(val) {
 			return val
 		}
 		env.Set(node.Name.Value, val)
@@ -35,7 +34,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalBlockStatement(node, env)
 	case *ast.ReturnStatement:
 		val := Eval(node.ReturnValue, env)
-		if utils.IsError(val) {
+		if object.IsError(val) {
 			return val
 		}
 		return &object.ReturnValue{Value: val}
@@ -43,28 +42,28 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	// Expressions
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env)
-		if utils.IsError(right) {
+		if object.IsError(right) {
 			return right
 		}
 		return evalPrefixExpression(node.Operator, right, &node.Token.Location)
 	case *ast.InfixExpression:
 		left := Eval(node.Left, env)
-		if utils.IsError(left) {
+		if object.IsError(left) {
 			return left
 		}
 		right := Eval(node.Right, env)
-		if utils.IsError(right) {
+		if object.IsError(right) {
 			return right
 		}
 		return evalInfixExpression(node.Operator, left, right, &node.Token.Location)
 
 	case *ast.IndexExpression:
 		left := Eval(node.Left, env)
-		if utils.IsError(left) {
+		if object.IsError(left) {
 			return left
 		}
 		idx := Eval(node.Index, env)
-		if utils.IsError(idx) {
+		if object.IsError(idx) {
 			return idx
 		}
 		return evalIndexExpression(left, idx, &node.Token.Location)
@@ -78,15 +77,15 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 
 		fn := Eval(node.Function, env)
-		if utils.IsError(fn) {
+		if object.IsError(fn) {
 			return fn
 		}
 		args := evalExpressions(node.Arguments, env)
-		if len(args) == 1 && utils.IsError(args[0]) {
+		if len(args) == 1 && object.IsError(args[0]) {
 			return args[0]
 		}
 		res := applyFunction(fn, &node.Token.Location, args)
-		if utils.IsError(res) {
+		if object.IsError(res) {
 			res.(*object.Error).Location = &node.Token.Location
 		}
 		return res
@@ -100,7 +99,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.String{Value: node.Value}
 	case *ast.ArrayLiteral:
 		elements := evalExpressions(node.Elements, env)
-		if len(elements) == 1 && utils.IsError(elements[0]) {
+		if len(elements) == 1 && object.IsError(elements[0]) {
 			return elements[0]
 		}
 		return &object.Array{Elements: elements}
@@ -182,7 +181,7 @@ func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 
 	for _, exp := range exps {
 		evaled := Eval(exp, env)
-		if utils.IsError(evaled) {
+		if object.IsError(evaled) {
 			return []object.Object{evaled}
 		}
 		result = append(result, evaled)
@@ -198,7 +197,7 @@ func evalPrefixExpression(operator string, right object.Object, loc *token.Token
 	case "-":
 		return evalMinusOperatorExpression(right, loc)
 	default:
-		return utils.NewError("unknown operator: %s%s", loc, operator, right.Type())
+		return object.NewError("unknown operator: %s%s", loc, operator, right.Type())
 	}
 }
 
@@ -217,7 +216,7 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 
 func evalMinusOperatorExpression(right object.Object, loc *token.TokenLocation) object.Object {
 	if right.Type() != object.INTEGER_OBJ {
-		return utils.NewError("unknown operator: -%s", loc, right.Type())
+		return object.NewError("unknown operator: -%s", loc, right.Type())
 	}
 	value := right.(*object.Integer).Value
 	return &object.Integer{Value: -value}
@@ -257,7 +256,7 @@ func evalIntegerInfixExpression(operator string, left, right object.Object, loc 
 	case "!=":
 		return nativeBoolToBooleanObject(lVal != rVal)
 	default:
-		return utils.NewError("unknown operator: %s %s %s", loc, left.Type(), operator, right.Type())
+		return object.NewError("unknown operator: %s %s %s", loc, left.Type(), operator, right.Type())
 	}
 }
 
@@ -275,7 +274,7 @@ func evalStringInfixExpression(operator string, left, right object.Object, loc *
 	case "!=":
 		return nativeBoolToBooleanObject(lVal != rVal)
 	default:
-		return utils.NewError("unknown operator: %s %s %s", loc, left.Type(), operator, right.Type())
+		return object.NewError("unknown operator: %s %s %s", loc, left.Type(), operator, right.Type())
 	}
 }
 
@@ -292,16 +291,16 @@ func evalInfixExpression(operator string, left, right object.Object, loc *token.
 		return nativeBoolToBooleanObject(left != right)
 
 	case left.Type() != right.Type():
-		return utils.NewError("type mismatch: %s %s %s", loc, left.Type(), operator, right.Type())
+		return object.NewError("type mismatch: %s %s %s", loc, left.Type(), operator, right.Type())
 	default:
-		return utils.NewError("unknown operator: %s %s %s", loc, left.Type(), operator, right.Type())
+		return object.NewError("unknown operator: %s %s %s", loc, left.Type(), operator, right.Type())
 	}
 }
 
 func evalArrayIndexExpression(arr object.Object, idx object.Object, loc *token.TokenLocation) object.Object {
 	ao, ok := arr.(*object.Array)
 	if !ok {
-		return utils.NewError("type mismatch for array index operation. got=%s", loc, arr.Type())
+		return object.NewError("type mismatch for array index operation. got=%s", loc, arr.Type())
 	}
 
 	i := idx.(*object.Integer).Value
@@ -324,13 +323,13 @@ func evalArrayIndexExpression(arr object.Object, idx object.Object, loc *token.T
 func evalHashIndexExpression(hash object.Object, idx object.Object, loc *token.TokenLocation) object.Object {
 	ho, ok := hash.(*object.Hash)
 	if !ok {
-		return utils.NewError("type mismatch for hash index operation. got=%s", loc, hash.Type())
+		return object.NewError("type mismatch for hash index operation. got=%s", loc, hash.Type())
 
 	}
 
 	hashKey, ok := idx.(object.Hashable)
 	if !ok {
-		return utils.NewError("unusable as hash key: %s", loc, idx.Type())
+		return object.NewError("unusable as hash key: %s", loc, idx.Type())
 	}
 
 	hashed := hashKey.HashKey()
@@ -350,14 +349,14 @@ func evalIndexExpression(left object.Object, index object.Object, loc *token.Tok
 	case left.Type() == object.HASH_OBJ:
 		return evalHashIndexExpression(left, index, loc)
 	default:
-		return utils.NewError("index operator not supported: %s", loc, left.Type())
+		return object.NewError("index operator not supported: %s", loc, left.Type())
 	}
 }
 
 func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {
 	condition := Eval(ie.Condition, env)
 
-	if utils.IsTruthy(condition) {
+	if object.IsTruthy(condition) {
 		return Eval(ie.Consequence, env)
 	} else if ie.Alternative != nil {
 		return Eval(ie.Alternative, env)
@@ -372,24 +371,24 @@ func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object
 	if builtin, ok := builtins[node.Value]; ok {
 		return builtin
 	}
-	return utils.NewError("identifier not found: "+node.Value, &node.Token.Location)
+	return object.NewError("identifier not found: "+node.Value, &node.Token.Location)
 }
 
 func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {
 	pairs := make(map[object.HashKey]object.HashPair)
 	for keyNode, valueNode := range node.Pairs {
 		key := Eval(keyNode, env)
-		if utils.IsError(key) {
+		if object.IsError(key) {
 			return key
 		}
 
 		hashKey, ok := key.(object.Hashable)
 		if !ok {
-			return utils.NewError("unusable as hash key: %s", &node.Token.Location, key.Type())
+			return object.NewError("unusable as hash key: %s", &node.Token.Location, key.Type())
 		}
 
 		value := Eval(valueNode, env)
-		if utils.IsError(value) {
+		if object.IsError(value) {
 			return value
 		}
 
@@ -416,7 +415,7 @@ func applyFunction(fn object.Object, loc *token.TokenLocation, args []object.Obj
 		return fun.Fn(args...)
 
 	default:
-		return utils.NewError("not a function: %s", loc, fn.Type())
+		return object.NewError("not a function: %s", loc, fn.Type())
 	}
 }
 

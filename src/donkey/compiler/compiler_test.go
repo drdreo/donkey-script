@@ -464,6 +464,81 @@ func TestIndexExpressions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestFunctionLiterals(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input: `fn() { return 5 + 10; }`,
+			expectedConstants: []interface{}{
+				5,
+				10,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpAdd),
+					code.Make(code.OpReturnValue),
+				}},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+	runCompilerTests(t, tests)
+
+}
+
+func TestCompilerScopes(t *testing.T) {
+	compiler := New()
+	if compiler.scopeIdx != 0 {
+		t.Errorf("scopeIdx wrong. got=%d, want=%d", compiler.scopeIdx, 0)
+	}
+
+	compiler.emit(code.OpMultiply)
+
+	compiler.enterScope()
+	if compiler.scopeIdx != 1 {
+		t.Errorf("scopeIdx wrong. got=%d, want=%d", compiler.scopeIdx, 1)
+	}
+
+	compiler.emit(code.OpSubtract)
+
+	if len(compiler.scopes[compiler.scopeIdx].instructions) != 1 {
+		t.Errorf("instructions length wrong. got=%d, want=%d",
+			len(compiler.scopes[compiler.scopeIdx].instructions), 1)
+	}
+
+	last := compiler.scopes[compiler.scopeIdx].lastInstruction
+	if last.Opcode != code.OpSubtract {
+		t.Errorf("lastInstruction.Opcode wrong. got=%d, want=%d",
+			last.Opcode, code.OpSubtract)
+	}
+
+	compiler.leaveScope()
+	if compiler.scopeIdx != 0 {
+		t.Errorf("scopeIndex wrong. got=%d, want=%d",
+			compiler.scopeIdx, 0)
+	}
+
+	compiler.emit(code.OpAdd)
+
+	if len(compiler.scopes[compiler.scopeIdx].instructions) != 2 {
+		t.Errorf("instructions length wrong. got=%d, want=%d",
+			len(compiler.scopes[compiler.scopeIdx].instructions), 2)
+	}
+
+	last = compiler.scopes[compiler.scopeIdx].lastInstruction
+	if last.Opcode != code.OpAdd {
+		t.Errorf("lastInstruction.Opcode wrong. got=%d, want=%d",
+			last.Opcode, code.OpAdd)
+	}
+
+	previous := compiler.scopes[compiler.scopeIdx].prevInstruction
+	if previous.Opcode != code.OpMultiply {
+		t.Errorf("prevInstruction.Opcode wrong. got=%d, want=%d",
+			previous.Opcode, code.OpMultiply)
+	}
+}
+
 // ---------------------
 // HELPERS
 // ---------------------
@@ -477,19 +552,19 @@ func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 		compiler := New()
 		err := compiler.Compile(program)
 		if err != nil {
-			t.Errorf("'%s' - compiler error: %s", tt.input, err)
+			t.Fatalf("'%s' - compiler error: %s", tt.input, err)
 		}
 
 		bytecode := compiler.Bytecode()
 
 		err = testInstructions(tt.expectedInstructions, bytecode.Instructions)
 		if err != nil {
-			t.Errorf("%s - testInstructions failed: %s", utils.Blue(tt.input), err)
+			t.Fatalf("%s - testInstructions failed: %s", utils.Blue(tt.input), err)
 		}
 
 		err = testConstants(t, tt.expectedConstants, bytecode.Constants)
 		if err != nil {
-			t.Errorf("%s - testConstants failed: %s", utils.Blue(tt.input), err)
+			t.Fatalf("%s - testConstants failed: %s", utils.Blue(tt.input), err)
 		}
 	}
 }
@@ -563,7 +638,7 @@ func testConstants(
 	t.Helper()
 
 	if len(expected) != len(actual) {
-		return fmt.Errorf("wrong number of constant. got=%d, want=%d",
+		return fmt.Errorf(utils.Red("wrong number of constants.")+" got=%d, want=%d",
 			len(actual), len(expected))
 	}
 
@@ -575,10 +650,24 @@ func testConstants(
 				return fmt.Errorf("constant %d - testIntegerObject failed: %s",
 					i, err)
 			}
+
 		case string:
 			err := testStringObject(constant, actual[i])
 			if err != nil {
 				return fmt.Errorf("constant %d - testStringObject failed: %s",
+					i, err)
+			}
+
+		case []code.Instructions:
+			fn, ok := actual[i].(*object.CompiledFunction)
+			if !ok {
+				return fmt.Errorf("constant %d - not a function: %T",
+					i, actual[i])
+			}
+
+			err := testInstructions(constant, fn.Instructions)
+			if err != nil {
+				return fmt.Errorf("constant %d - testInstructions failed: %s",
 					i, err)
 			}
 		}

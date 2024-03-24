@@ -74,7 +74,7 @@ func (vm *VM) Run() error {
 			ip += 2
 
 			condition := vm.pop()
-			if !utils.IsTruthy(condition) {
+			if !object.IsTruthy(condition) {
 				ip = pos - 1
 			}
 

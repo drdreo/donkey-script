@@ -19,21 +19,30 @@ type Bytecode struct {
 	Constants    []object.Object
 }
 
-type Compiler struct {
+type CompilationScope struct {
 	instructions    code.Instructions
 	lastInstruction EmittedInstruction
 	prevInstruction EmittedInstruction
-	constants       []object.Object
-	symbolTable     *symbol.SymbolTable
+}
+
+type Compiler struct {
+	constants   []object.Object
+	symbolTable *symbol.SymbolTable
+	scopes      []CompilationScope
+	scopeIdx    int
 }
 
 func New() *Compiler {
-	return &Compiler{
+	mainScope := CompilationScope{
 		instructions:    code.Instructions{},
-		constants:       []object.Object{},
 		lastInstruction: EmittedInstruction{},
 		prevInstruction: EmittedInstruction{},
-		symbolTable:     symbol.NewSymbolTable(),
+	}
+	return &Compiler{
+		constants:   []object.Object{},
+		symbolTable: symbol.NewSymbolTable(),
+		scopes:      []CompilationScope{mainScope},
+		scopeIdx:    0,
 	}
 }
 
@@ -47,7 +56,7 @@ func NewWithState(s *symbol.SymbolTable, constants []object.Object) *Compiler {
 
 func (c *Compiler) Bytecode() *Bytecode {
 	return &Bytecode{
-		Instructions: c.instructions,
+		Instructions: c.currentInstructions(),
 		Constants:    c.constants,
 	}
 }
@@ -161,7 +170,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		// Emit an `OpJump` with a garbage vlaue, back-patched
 		jumpPos := c.emit(code.OpJump, 9999)
 
-		afterConsequencePos := len(c.instructions)
+		afterConsequencePos := len(c.currentInstructions())
 		c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
 
 		// no else-block, emit a NULL instead
@@ -178,7 +187,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			}
 		}
 
-		afterAlternativePos := len(c.instructions)
+		afterAlternativePos := len(c.currentInstructions())
 		c.changeOperand(jumpPos, afterAlternativePos)
 
 	case *ast.BooleanLiteral:
@@ -206,7 +215,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		c.emit(code.OpArray, len(node.Elements))
 
 	case *ast.HashLiteral:
-		keys := []ast.Expression{}
+		var keys []ast.Expression
 		for k := range node.Pairs {
 			keys = append(keys, k)
 		}
@@ -258,31 +267,64 @@ func (c *Compiler) emit(op code.Opcode, operands ...int) int {
 	return pos
 }
 
+func (c *Compiler) enterScope() {
+	scope := CompilationScope{
+		instructions:    code.Instructions{},
+		lastInstruction: EmittedInstruction{},
+		prevInstruction: EmittedInstruction{},
+	}
+	c.scopes = append(c.scopes, scope)
+	c.scopeIdx++
+}
+
+func (c *Compiler) leaveScope() code.Instructions {
+	instructions := c.currentInstructions()
+
+	c.scopes = c.scopes[:len(c.scopes)-1]
+	c.scopeIdx--
+
+	return instructions
+}
+
+func (c *Compiler) currentInstructions() code.Instructions {
+	return c.scopes[c.scopeIdx].instructions
+}
+
 func (c *Compiler) addInstruction(ins []byte) int {
-	posNewInstruction := len(c.instructions)
-	c.instructions = append(c.instructions, ins...)
+	posNewInstruction := len(c.currentInstructions())
+	updatedInstructions := append(c.currentInstructions(), ins...)
+
+	c.scopes[c.scopeIdx].instructions = updatedInstructions
+
 	return posNewInstruction
 }
 
-func (c *Compiler) replaceInstruction(pos int, newInstruction []byte) {
-	// this assumes non-variable, same length instructions
-	for i := 0; i < len(newInstruction); i++ {
-		c.instructions[pos+i] = newInstruction[i]
-	}
-}
-
 func (c *Compiler) setLastInstruction(op code.Opcode, pos int) {
-	c.prevInstruction = c.lastInstruction
-	c.lastInstruction = EmittedInstruction{Opcode: op, Position: pos}
+	c.scopes[c.scopeIdx].prevInstruction = c.scopes[c.scopeIdx].lastInstruction
+	c.scopes[c.scopeIdx].lastInstruction = EmittedInstruction{Opcode: op, Position: pos}
 }
 
 func (c *Compiler) isLastInstruction(op code.Opcode) bool {
-	return c.lastInstruction.Opcode == op
+	return c.scopes[c.scopeIdx].lastInstruction.Opcode == op
 }
 
 func (c *Compiler) removeLastInstruction() {
-	c.instructions = c.instructions[:c.lastInstruction.Position]
-	c.lastInstruction = c.prevInstruction
+	last := c.scopes[c.scopeIdx].lastInstruction
+	prev := c.scopes[c.scopeIdx].prevInstruction
+
+	curInstructions := c.currentInstructions()
+	newInstructions := curInstructions[:last.Position]
+
+	c.scopes[c.scopeIdx].instructions = newInstructions
+	c.scopes[c.scopeIdx].lastInstruction = prev
+}
+
+func (c *Compiler) replaceInstruction(pos int, newInstruction []byte) {
+	curInstructions := c.currentInstructions()
+	// this assumes non-variable, same length instructions
+	for i := 0; i < len(newInstruction); i++ {
+		curInstructions[pos+i] = newInstruction[i]
+	}
 }
 
 func (c *Compiler) addConstant(obj object.Object) int {
@@ -291,7 +333,9 @@ func (c *Compiler) addConstant(obj object.Object) int {
 }
 
 func (c *Compiler) changeOperand(opPos int, operand int) {
-	op := code.Opcode(c.instructions[opPos])
+	curInstructions := c.currentInstructions()
+
+	op := code.Opcode(curInstructions[opPos])
 	newInstruction := code.Make(op, operand)
 
 	c.replaceInstruction(opPos, newInstruction)
