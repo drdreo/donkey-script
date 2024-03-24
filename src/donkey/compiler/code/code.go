@@ -38,6 +38,7 @@ const (
 
 	// Datastructure
 	OpArray
+	OpHash
 )
 
 type Instructions []byte
@@ -115,6 +116,7 @@ var definitions = map[Opcode]*Definition{
 	OpDivide:   {"OpDivide", []int{}},
 
 	OpArray: {"OpArray", []int{2}},
+	OpHash:  {"OpHash", []int{2}},
 }
 
 func Lookup(op byte) (*Definition, error) {

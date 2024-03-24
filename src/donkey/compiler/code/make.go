@@ -1,6 +1,7 @@
 package code
 
 import (
+	"donkey/utils"
 	"encoding/binary"
 	"fmt"
 )
@@ -10,6 +11,10 @@ func Make(op Opcode, operands ...int) []byte {
 	if !ok {
 		fmt.Printf("opcode %d undefined", op)
 		return []byte{}
+	}
+
+	if len(def.OperandWidths) != len(operands) {
+		fmt.Printf(utils.Yellow("opcode %s operands mismatch. ", def.Name)+"got=%d, want=%d", len(operands), len(def.OperandWidths))
 	}
 
 	instructionLen := 1

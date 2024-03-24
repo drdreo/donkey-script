@@ -126,6 +126,23 @@ func TestArrayLiterals(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestHashLiterals(t *testing.T) {
+	tests := []vmTestCase{
+		{`{}`, map[object.HashKey]int64{}},
+		{`{1:2,3:4,5:6}`, map[object.HashKey]int64{
+			(&object.Integer{Value: 1}).HashKey(): 2,
+			(&object.Integer{Value: 3}).HashKey(): 4,
+			(&object.Integer{Value: 5}).HashKey(): 6,
+		}},
+		{`{1+1 : 2*2, 3+3 : 4*4}`, map[object.HashKey]int64{
+			(&object.Integer{Value: 2}).HashKey(): 4,
+			(&object.Integer{Value: 6}).HashKey(): 16,
+		}},
+	}
+
+	runVmTests(t, tests)
+}
+
 /**
 TEST HELPRS
 **/
@@ -185,7 +202,11 @@ func testExpectedObject(
 		if err != nil {
 			t.Fatalf("%s - testIntArrayObject failed: %s", utils.Blue(tC.input), err)
 		}
-
+	case map[object.HashKey]int64:
+		err := testIntHashObject(expected, actual)
+		if err != nil {
+			t.Fatalf("%s - testIntArrayObject failed: %s", utils.Blue(tC.input), err)
+		}
 	case *object.Null:
 		if actual != Null {
 			t.Fatalf("%s - object is not Null: %T (%+v)", utils.Blue(tC.input), actual, actual)
@@ -252,6 +273,32 @@ func testIntArrayObject(expected []int, actual object.Object) error {
 
 	for i, expectedEl := range expected {
 		err := testIntegerObject(int64(expectedEl), arr.Elements[i])
+		if err != nil {
+			return fmt.Errorf("testIntegerObject failed: %s", err)
+		}
+	}
+
+	return nil
+}
+
+func testIntHashObject(expected map[object.HashKey]int64, actual object.Object) error {
+	hash, ok := actual.(*object.Hash)
+	if !ok {
+		return fmt.Errorf(utils.Red("object is not Hash")+" got = %T(%+v)",
+			actual, actual)
+	}
+
+	if len(hash.Pairs) != len(expected) {
+		return fmt.Errorf(utils.Red("hash pair amount mismatch.")+" got=%d, want=%d",
+			len(hash.Pairs), len(expected))
+	}
+
+	for expectedKey, expectedVal := range expected {
+		pair, ok := hash.Pairs[expectedKey]
+		if !ok {
+			return fmt.Errorf("no pair in hash for key=%d", expectedKey.Value)
+		}
+		err := testIntegerObject(expectedVal, pair.Value)
 		if err != nil {
 			return fmt.Errorf("testIntegerObject failed: %s", err)
 		}
