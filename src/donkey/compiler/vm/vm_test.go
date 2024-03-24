@@ -167,8 +167,48 @@ func TestIndexExpressions(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestFunctionCallsWithoutArguments(t *testing.T) {
+	tests := []vmTestCase{
+		{`
+		let fivePlusTen = fn(){ 5 + 10; }
+		fivePlusTen();
+		`,
+			15,
+		},
+		{`
+		let one = fn(){ 1 }
+		let two = fn(){ 2 }
+		one() + two();
+		`,
+			3,
+		},
+		{`
+		let a = fn(){ 1 }
+		let b = fn(){ a() + 1 }
+		let c = fn(){ b() + 1 }
+		c();
+		`,
+			3,
+		},
+		{`
+		let earlyOut = fn(){ return 69; 420; }
+		earlyOut();
+		`,
+			69,
+		},
+		{`
+		let earlyOut = fn(){ return 69; return 420; }
+		earlyOut();
+		`,
+			69,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
 /**
-TEST HELPRS
+TEST HELPERS
 **/
 
 func runVmTests(t *testing.T, tests []vmTestCase) {

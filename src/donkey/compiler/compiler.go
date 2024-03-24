@@ -86,6 +86,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 		sym := c.symbolTable.Define(node.Name.Value)
 		c.emit(code.OpSetGlobal, sym.Index)
 
+	case *ast.Identifier:
+		sym, ok := c.symbolTable.Resolve(node.Value)
+		if !ok {
+			return fmt.Errorf("undefined variable %s", node.Value)
+		}
+		c.emit(code.OpGetGlobal, sym.Index)
+
 	case *ast.BlockStatement:
 		for _, s := range node.Statements {
 			err := c.Compile(s)
@@ -236,6 +243,46 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.emit(code.OpHash, len(node.Pairs)*2)
 
+	case *ast.FunctionLiteral:
+		c.enterScope()
+
+		err := c.Compile(node.Body)
+		if err != nil {
+			return err
+		}
+
+		// to support implicit returns
+		// e.g. fn(){5}
+		if c.isLastInstruction(code.OpPop) {
+			c.replaceLastInstruction(code.OpReturnValue)
+		}
+		// empty functions, that dont return anything, implicitly nor explicitly
+		// e.g. fn(){}
+		if !c.isLastInstruction(code.OpReturnValue) {
+			c.emit(code.OpReturn)
+		}
+
+		instructions := c.leaveScope()
+
+		compiledFunc := &object.CompiledFunction{Instructions: instructions}
+		c.emit(code.OpConstant, c.addConstant(compiledFunc))
+
+	case *ast.ReturnStatement:
+		err := c.Compile(node.ReturnValue)
+		if err != nil {
+			return err
+		}
+
+		c.emit(code.OpReturnValue)
+
+	case *ast.CallExpression:
+		err := c.Compile(node.Function)
+		if err != nil {
+			return err
+		}
+
+		c.emit(code.OpCall)
+
 	case *ast.IndexExpression:
 		err := c.Compile(node.Left)
 		if err != nil {
@@ -249,12 +296,6 @@ func (c *Compiler) Compile(node ast.Node) error {
 
 		c.emit(code.OpIndex)
 
-	case *ast.Identifier:
-		sym, ok := c.symbolTable.Resolve(node.Value)
-		if !ok {
-			return fmt.Errorf("undefined variable %s", node.Value)
-		}
-		c.emit(code.OpGetGlobal, sym.Index)
 	}
 	return nil
 }
@@ -305,6 +346,9 @@ func (c *Compiler) setLastInstruction(op code.Opcode, pos int) {
 }
 
 func (c *Compiler) isLastInstruction(op code.Opcode) bool {
+	if len(c.currentInstructions()) == 0 {
+		return false
+	}
 	return c.scopes[c.scopeIdx].lastInstruction.Opcode == op
 }
 
@@ -325,6 +369,13 @@ func (c *Compiler) replaceInstruction(pos int, newInstruction []byte) {
 	for i := 0; i < len(newInstruction); i++ {
 		curInstructions[pos+i] = newInstruction[i]
 	}
+}
+
+func (c *Compiler) replaceLastInstruction(op code.Opcode) {
+	opcode := code.Make(op)
+	lastPos := c.scopes[c.scopeIdx].lastInstruction.Position
+	c.replaceInstruction(lastPos, opcode)
+	c.scopes[c.scopeIdx].lastInstruction.Opcode = op
 }
 
 func (c *Compiler) addConstant(obj object.Object) int {
