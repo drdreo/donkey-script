@@ -122,7 +122,7 @@ func (vm *VM) Run() error {
 				return err
 			}
 
-		case code.OpAdd, code.OpSubtract, code.OpMult, code.OpDivide:
+		case code.OpAdd, code.OpSubtract, code.OpMultiply, code.OpDivide:
 			err := vm.executeBinaryOperation(op)
 			if err != nil {
 				return err
@@ -150,6 +150,15 @@ func (vm *VM) Run() error {
 			}
 			vm.sp = vm.sp - numElements
 			err = vm.push(hash)
+			if err != nil {
+				return err
+			}
+
+		case code.OpIndex:
+			idx := vm.pop()
+			left := vm.pop()
+
+			err := vm.executeIndexExpression(left, idx)
 			if err != nil {
 				return err
 			}
@@ -186,7 +195,7 @@ func (vm *VM) executeBinaryIntegerOperation(op code.Opcode, left, right object.O
 		result = lVal + rVal
 	case code.OpSubtract:
 		result = lVal - rVal
-	case code.OpMult:
+	case code.OpMultiply:
 		result = lVal * rVal
 	case code.OpDivide:
 		result = lVal / rVal
@@ -302,6 +311,52 @@ func (vm *VM) executeMinusOperator() error {
 
 	value := operand.(*object.Integer).Value
 	return vm.push(&object.Integer{Value: -value})
+}
+
+func (vm *VM) executeIndexExpression(left, index object.Object) error {
+	switch {
+	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		return vm.executeArrayIndex(left, index)
+	case left.Type() == object.HASH_OBJ:
+		return vm.executeHashIndex(left, index)
+	default:
+		return fmt.Errorf("index operator not supported: %s", left.Type())
+	}
+}
+
+func (vm *VM) executeArrayIndex(array, index object.Object) error {
+	arrayObject := array.(*object.Array)
+	idx := index.(*object.Integer).Value
+	length := int64(len(arrayObject.Elements))
+	maxIdx := length - 1
+
+	// validate out of bounds access
+	// [1,2,3][3] || [1,2,3][-4]
+	if idx > maxIdx || idx < -length {
+		return vm.push(Null)
+	}
+
+	access := idx
+	// support access from back [1,2,3][-1] --> 3
+	if idx < 0 {
+		access += maxIdx + 1
+	}
+
+	return vm.push(arrayObject.Elements[access])
+}
+
+func (vm *VM) executeHashIndex(hash, index object.Object) error {
+	hashObject := hash.(*object.Hash)
+	key, ok := index.(object.Hashable)
+	if !ok {
+		return fmt.Errorf("invalid hash key: %s", index.Type())
+	}
+	pair, ok := hashObject.Pairs[key.HashKey()]
+	if !ok {
+		return vm.push(Null)
+	}
+
+	return vm.push(pair.Value)
 }
 
 func (vm *VM) buildArray(startIdx int, endIdx int) object.Object {

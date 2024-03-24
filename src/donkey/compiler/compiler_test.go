@@ -52,7 +52,7 @@ func TestIntegerArithmetic(t *testing.T) {
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
 				code.Make(code.OpConstant, 1),
-				code.Make(code.OpMult),
+				code.Make(code.OpMultiply),
 				code.Make(code.OpPop),
 			},
 		},
@@ -372,7 +372,7 @@ func TestArrayLiterals(t *testing.T) {
 
 				code.Make(code.OpConstant, 4),
 				code.Make(code.OpConstant, 5),
-				code.Make(code.OpMult),
+				code.Make(code.OpMultiply),
 
 				code.Make(code.OpArray, 3),
 				code.Make(code.OpPop),
@@ -418,8 +418,44 @@ func TestHashLiterals(t *testing.T) {
 				code.Make(code.OpConstant, 3),
 				code.Make(code.OpConstant, 4),
 				code.Make(code.OpConstant, 5),
-				code.Make(code.OpMult),
+				code.Make(code.OpMultiply),
 				code.Make(code.OpHash, 4),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
+func TestIndexExpressions(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input:             `[1,2,3][1+1]`,
+			expectedConstants: []interface{}{1, 2, 3, 1, 1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpArray, 3),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpConstant, 4),
+				code.Make(code.OpAdd),
+				code.Make(code.OpIndex),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             `{1:2}[2-1]`,
+			expectedConstants: []interface{}{1, 2, 2, 1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpHash, 2),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpSubtract),
+				code.Make(code.OpIndex),
 				code.Make(code.OpPop),
 			},
 		},
@@ -441,19 +477,19 @@ func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 		compiler := New()
 		err := compiler.Compile(program)
 		if err != nil {
-			t.Fatalf("'%s' - compiler error: %s", tt.input, err)
+			t.Errorf("'%s' - compiler error: %s", tt.input, err)
 		}
 
 		bytecode := compiler.Bytecode()
 
 		err = testInstructions(tt.expectedInstructions, bytecode.Instructions)
 		if err != nil {
-			t.Fatalf("%s - testInstructions failed: %s", utils.Blue(tt.input), err)
+			t.Errorf("%s - testInstructions failed: %s", utils.Blue(tt.input), err)
 		}
 
 		err = testConstants(t, tt.expectedConstants, bytecode.Constants)
 		if err != nil {
-			t.Fatalf("%s - testConstants failed: %s", utils.Blue(tt.input), err)
+			t.Errorf("%s - testConstants failed: %s", utils.Blue(tt.input), err)
 		}
 	}
 }

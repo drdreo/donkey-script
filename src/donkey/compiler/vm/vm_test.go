@@ -143,6 +143,26 @@ func TestHashLiterals(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestIndexExpressions(t *testing.T) {
+	tests := []vmTestCase{
+		{`[1,2,3][1]`, 2},
+		{`[1,2,3][0+2]`, 3},
+		{`[[1,1,1]][0][0]`, 1},
+		{`[][0]`, Null},
+		{`[1,2,3][99]`, Null},
+		{`[1][-1]`, 1},
+		{`[1,2][-1]`, 2},
+
+		{`{1:1,2:2}[1]`, 1},
+		{`{1:1,2:2}[2]`, 2},
+		{`{}[0]`, Null},
+		{`{1:1}[0]`, Null},
+		{`{1:2}[-1]`, Null},
+	}
+
+	runVmTests(t, tests)
+}
+
 /**
 TEST HELPRS
 **/
@@ -182,34 +202,34 @@ func testExpectedObject(
 	case int:
 		err := testIntegerObject(int64(expected), actual)
 		if err != nil {
-			t.Fatalf("%s - testIntegerObject failed: %s", utils.Blue(tC.input), err)
+			t.Errorf("%s - testIntegerObject failed: %s", utils.Blue(tC.input), err)
 		}
 
 	case bool:
 		err := testBooleanObject(expected, actual)
 		if err != nil {
-			t.Fatalf("%s - testBooleanObject failed: %s", utils.Blue(tC.input), err)
+			t.Errorf("%s - testBooleanObject failed: %s", utils.Blue(tC.input), err)
 		}
 
 	case string:
 		err := testStringObject(expected, actual)
 		if err != nil {
-			t.Fatalf("%s - testStringObject failed: %s", utils.Blue(tC.input), err)
+			t.Errorf("%s - testStringObject failed: %s", utils.Blue(tC.input), err)
 		}
 
 	case []int:
 		err := testIntArrayObject(expected, actual)
 		if err != nil {
-			t.Fatalf("%s - testIntArrayObject failed: %s", utils.Blue(tC.input), err)
+			t.Errorf("%s - testIntArrayObject failed: %s", utils.Blue(tC.input), err)
 		}
 	case map[object.HashKey]int64:
 		err := testIntHashObject(expected, actual)
 		if err != nil {
-			t.Fatalf("%s - testIntArrayObject failed: %s", utils.Blue(tC.input), err)
+			t.Errorf("%s - testIntArrayObject failed: %s", utils.Blue(tC.input), err)
 		}
 	case *object.Null:
 		if actual != Null {
-			t.Fatalf("%s - object is not Null: %T (%+v)", utils.Blue(tC.input), actual, actual)
+			t.Errorf("%s - object is not Null: %T (%+v)", utils.Blue(tC.input), actual, actual)
 		}
 	}
 }

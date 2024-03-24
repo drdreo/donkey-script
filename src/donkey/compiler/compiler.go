@@ -124,7 +124,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		case "-":
 			c.emit(code.OpSubtract)
 		case "*":
-			c.emit(code.OpMult)
+			c.emit(code.OpMultiply)
 		case "/":
 			c.emit(code.OpDivide)
 
@@ -226,6 +226,19 @@ func (c *Compiler) Compile(node ast.Node) error {
 			}
 		}
 		c.emit(code.OpHash, len(node.Pairs)*2)
+
+	case *ast.IndexExpression:
+		err := c.Compile(node.Left)
+		if err != nil {
+			return err
+		}
+
+		err = c.Compile(node.Index)
+		if err != nil {
+			return err
+		}
+
+		c.emit(code.OpIndex)
 
 	case *ast.Identifier:
 		sym, ok := c.symbolTable.Resolve(node.Value)
