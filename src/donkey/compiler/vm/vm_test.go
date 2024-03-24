@@ -111,6 +111,10 @@ func TestStringExpression(t *testing.T) {
 		{`"don" + "key" + " kong"`, "donkey kong"},
 		{`"donkey" - "key"`, "don"},
 		{`"donkey kong" - "d" - " "`, "onkeykong"},
+		{`"hey" == "hey"`, true},
+		{`"hey" != "hey"`, false},
+		{`"hey" == "nej"`, false},
+		{`"hey" != "nej"`, true},
 	}
 
 	runVmTests(t, tests)
