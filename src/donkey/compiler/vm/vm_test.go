@@ -170,40 +170,130 @@ func TestIndexExpressions(t *testing.T) {
 func TestFunctionCallsWithoutArguments(t *testing.T) {
 	tests := []vmTestCase{
 		{`
-		let fivePlusTen = fn(){ 5 + 10; }
-		fivePlusTen();
-		`,
+let fivePlusTen = fn(){ 5 + 10; }
+fivePlusTen();
+`,
 			15,
 		},
 		{`
-		let one = fn(){ 1 }
-		let two = fn(){ 2 }
-		one() + two();
-		`,
+let one = fn(){ 1 }
+let two = fn(){ 2 }
+one() + two();
+`,
 			3,
 		},
 		{`
-		let a = fn(){ 1 }
-		let b = fn(){ a() + 1 }
-		let c = fn(){ b() + 1 }
-		c();
-		`,
+let a = fn(){ 1 }
+let b = fn(){ a() + 1 }
+let c = fn(){ b() + 1 }
+c();
+`,
 			3,
 		},
 		{`
-		let earlyOut = fn(){ return 69; 420; }
-		earlyOut();
-		`,
+let earlyOut = fn(){ return 69; 420; }
+earlyOut();
+`,
 			69,
 		},
 		{`
-		let earlyOut = fn(){ return 69; return 420; }
-		earlyOut();
-		`,
+let earlyOut = fn(){ return 69; return 420; }
+earlyOut();
+`,
 			69,
 		},
 	}
 
+	runVmTests(t, tests)
+}
+
+func TestFunctionCallsWithoutReturnValue(t *testing.T) {
+	tests := []vmTestCase{
+		{`
+fn(){}();
+`,
+			Null,
+		},
+		{`
+let empty = fn(){}
+empty();
+`,
+			Null,
+		},
+		{`
+let empty = fn(){}
+let second = fn(){ empty(); }
+empty();
+second();
+`,
+			Null,
+		},
+	}
+	runVmTests(t, tests)
+}
+
+func TestFunctionCallsWithBindings(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+let one = fn() { let one = 1; one };
+one();
+		`,
+			expected: 1,
+		},
+		{
+			input: `
+let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+oneAndTwo();
+`,
+			expected: 3,
+		},
+		{
+			input: `
+let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+let threeAndFour = fn() { let three = 3; let four = 4; three + four; };
+oneAndTwo() + threeAndFour();
+`,
+			expected: 10,
+		},
+		{
+			input: `
+let firstFoobar = fn() { let foobar = 50; foobar; };
+let secondFoobar = fn() { let foobar = 100; foobar; };
+firstFoobar() + secondFoobar();
+`,
+			expected: 150,
+		},
+		{
+			input: `
+let globalSeed = 50;
+let minusOne = fn() {
+	let num = 1;
+	globalSeed - num;
+}
+let minusTwo = fn() {
+	let num = 2;
+	globalSeed - num;
+}
+minusOne() + minusTwo();
+`,
+			expected: 97,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestFirstClassFunctions(t *testing.T) {
+	tests := []vmTestCase{
+		{`
+let returnsOne = fn(){1}
+let wrapper = fn(){returnsOne}
+wrapper()()
+`,
+			1,
+		},
+	}
 	runVmTests(t, tests)
 }
 

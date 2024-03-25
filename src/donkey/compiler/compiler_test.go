@@ -302,6 +302,79 @@ func TestGlobalLetStatements(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestLocalLetStatements(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input: `
+let num = 69;
+fn() { num };
+`,
+			expectedConstants: []interface{}{
+				69,
+				[]code.Instructions{
+					code.Make(code.OpGetGlobal, 0),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+fn() {
+	let num = 69
+	num;
+};
+`,
+			expectedConstants: []interface{}{
+				69,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSetLocal, 0),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+fn() {
+	let a = 69;
+	let b = 420;
+	a + b;
+};
+`,
+			expectedConstants: []interface{}{
+				69,
+				420,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSetLocal, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpSetLocal, 1),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpGetLocal, 1),
+					code.Make(code.OpAdd),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+	runCompilerTests(t, tests)
+}
+
 func TestStringExpressions(t *testing.T) {
 	tests := []compilerTestCase{
 		{
@@ -576,6 +649,8 @@ func TestCompilerScopes(t *testing.T) {
 		t.Errorf("scopeIdx wrong. got=%d, want=%d", compiler.scopeIdx, 0)
 	}
 
+	globalSymbolTable := compiler.symbolTable
+
 	compiler.emit(code.OpMultiply)
 
 	compiler.enterScope()
@@ -596,10 +671,21 @@ func TestCompilerScopes(t *testing.T) {
 			last.Opcode, code.OpSubtract)
 	}
 
+	if compiler.symbolTable.Outer != globalSymbolTable {
+		t.Errorf("compiler did not enclose symbol table")
+	}
+
 	compiler.leaveScope()
 	if compiler.scopeIdx != 0 {
 		t.Errorf("scopeIndex wrong. got=%d, want=%d",
 			compiler.scopeIdx, 0)
+	}
+
+	if compiler.symbolTable != globalSymbolTable {
+		t.Errorf("compiler did not restore global symbol table")
+	}
+	if compiler.symbolTable.Outer != nil {
+		t.Errorf("compiler modified global symbol table incorrectly")
 	}
 
 	compiler.emit(code.OpAdd)
@@ -647,7 +733,7 @@ func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 
 		err = testConstants(t, tt.expectedConstants, bytecode.Constants)
 		if err != nil {
-			t.Fatalf("%s - testConstants failed: %s", utils.Blue(tt.input), err)
+			t.Errorf("%s - testConstants failed: %s", utils.Blue(tt.input), err)
 		}
 	}
 }
