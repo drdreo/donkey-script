@@ -293,6 +293,15 @@ wrapper()()
 `,
 			1,
 		},
+		{`
+let returnsOneWrapper = fn(){
+	let returnsOne = fn(){1}
+	returnsOne;
+}
+returnsOneWrapper()()
+`,
+			1,
+		},
 	}
 	runVmTests(t, tests)
 }

@@ -204,6 +204,7 @@ func (f *Function) Inspect() string {
 
 type CompiledFunction struct {
 	Instructions code.Instructions
+	NumLocals    int
 }
 
 func (f *CompiledFunction) Type() ObjectType {

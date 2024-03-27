@@ -29,7 +29,7 @@ type VM struct {
 
 func New(bytecode *compiler.Bytecode) *VM {
 	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
-	mainFrame := NewFrame(mainFn)
+	mainFrame := NewFrame(mainFn, 0)
 
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = mainFrame
@@ -71,10 +71,10 @@ func (vm *VM) Run() error {
 	var ins code.Instructions
 	var op code.Opcode
 
-	for vm.currentFrame().ip < len(vm.currentFrame().Instructions())-1 {
-		vm.currentFrame().ip++
+	for vm.currentFrame().instPointer < len(vm.currentFrame().Instructions())-1 {
+		vm.currentFrame().instPointer++
 
-		ip = vm.currentFrame().ip
+		ip = vm.currentFrame().instPointer
 		ins = vm.currentFrame().Instructions()
 		op = code.Opcode(ins[ip])
 
@@ -84,7 +84,7 @@ func (vm *VM) Run() error {
 
 		case code.OpConstant:
 			constIdx := code.ReadUint16(ins[ip+1:])
-			vm.currentFrame().ip += 2
+			vm.currentFrame().instPointer += 2
 
 			err := vm.push(vm.constants[constIdx])
 			if err != nil {
@@ -99,28 +99,47 @@ func (vm *VM) Run() error {
 
 		case code.OpJump:
 			pos := int(code.ReadUint16(ins[ip+1:]))
-			vm.currentFrame().ip = pos - 1 // jump to one position before, since the loop will ip++
+			vm.currentFrame().instPointer = pos - 1 // jump to one position before, since the loop will instPointer++
 
 		case code.OpJumpNotTruthy:
 			pos := int(code.ReadUint16(ins[ip+1:]))
-			vm.currentFrame().ip += 2
+			vm.currentFrame().instPointer += 2
 
 			condition := vm.pop()
 			if !object.IsTruthy(condition) {
-				vm.currentFrame().ip = pos - 1
+				vm.currentFrame().instPointer = pos - 1
 			}
 
 		case code.OpSetGlobal:
 			globalIdx := code.ReadUint16(ins[ip+1:])
-			vm.currentFrame().ip += 2
+			vm.currentFrame().instPointer += 2
 
 			vm.globals[globalIdx] = vm.pop()
 
 		case code.OpGetGlobal:
 			globalIdx := code.ReadUint16(ins[ip+1:])
-			vm.currentFrame().ip += 2
+			vm.currentFrame().instPointer += 2
 
 			err := vm.push(vm.globals[globalIdx])
+			if err != nil {
+				return err
+			}
+
+		case code.OpSetLocal:
+			localIdx := code.ReadUint8(ins[ip+1:])
+			vm.currentFrame().instPointer += 1
+
+			frame := vm.currentFrame()
+
+			vm.stack[frame.basePointer+int(localIdx)] = vm.pop()
+
+		case code.OpGetLocal:
+			localIdx := code.ReadUint8(ins[ip+1:])
+			vm.currentFrame().instPointer += 1
+
+			frame := vm.currentFrame()
+
+			err := vm.push(vm.stack[frame.basePointer+int(localIdx)])
 			if err != nil {
 				return err
 			}
@@ -162,7 +181,7 @@ func (vm *VM) Run() error {
 
 		case code.OpArray:
 			length := int(code.ReadUint16(ins[ip+1:]))
-			vm.currentFrame().ip += 2
+			vm.currentFrame().instPointer += 2
 
 			arr := vm.buildArray(vm.sp-length, vm.sp)
 			vm.sp -= length
@@ -174,7 +193,7 @@ func (vm *VM) Run() error {
 
 		case code.OpHash:
 			numElements := int(code.ReadUint16(ins[ip+1:]))
-			vm.currentFrame().ip += 2
+			vm.currentFrame().instPointer += 2
 
 			hash, err := vm.buildHash(vm.sp-numElements, vm.sp)
 			if err != nil {
@@ -201,13 +220,16 @@ func (vm *VM) Run() error {
 				return fmt.Errorf("calling non-function")
 			}
 
-			frame := NewFrame(fn)
+			frame := NewFrame(fn, vm.sp)
 			vm.pushFrame(frame)
+			// ?? verify - vm.sp = frame.basePointer + fn.NumLocals
+			// reserve stack space for local function bindings
+			vm.sp += fn.NumLocals
 
 		case code.OpReturn:
 			// empty return
-			vm.popFrame()
-			vm.pop()
+			frame := vm.popFrame()
+			vm.sp = frame.basePointer - 1
 
 			err := vm.push(Null)
 			if err != nil {
@@ -217,8 +239,8 @@ func (vm *VM) Run() error {
 		case code.OpReturnValue:
 			returnValue := vm.pop()
 
-			vm.popFrame()
-			vm.pop()
+			frame := vm.popFrame()
+			vm.sp = frame.basePointer - 1
 
 			err := vm.push(returnValue)
 			if err != nil {
